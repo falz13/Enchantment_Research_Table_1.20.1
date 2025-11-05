@@ -393,8 +393,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (!isUnlocked) {
                 rows.add(new Row(idStr, ench, "???", null, COLOR_LOCKED));
             } else {
-                int usable = ResearchPersistentState.usableLevelFor(total);
-                int capped = Math.min(usable, ench.getMaxLevel());
+                int capped = ResearchPersistentState.usableLevelFor(total, ench.getMaxLevel());
                 String name = Text.translatable(ench.getTranslationKey()).getString();
                 if (capped == 0) {
                     String subtitle = "Level I Locked";
@@ -578,16 +577,16 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         y += 6;
 
         int totalPts = ResearchClientState.progress().getOrDefault(enchId.toString(), 0);
-        int usable = ResearchPersistentState.usableLevelFor(totalPts);
         int maxLevel = ench.getMaxLevel();
+        int unlockedLevel = ResearchPersistentState.usableLevelFor(totalPts, maxLevel);
 
-        if (usable >= maxLevel) {
+        if (unlockedLevel >= maxLevel) {
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_complete"),
                     contentLeft, y, COLOR_COMPLETE, false);
             y += 12;
         } else {
-            int nextLevel = Math.min(usable + 1, maxLevel);
-            int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel);
+            int nextLevel = Math.min(unlockedLevel + 1, maxLevel);
+            int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel, maxLevel);
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.researching"),
                     contentLeft, y, 0xFFFFFFFF, false);
             y += 12;
@@ -852,8 +851,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             Identifier id = Registries.ENCHANTMENT.getId(en);
             if (id == null) return 0;
             int total = prog.getOrDefault(id.toString(), 0);
-            int usable = ResearchPersistentState.usableLevelFor(total);
-            return Math.min(usable, en.getMaxLevel());
+            return ResearchPersistentState.usableLevelFor(total, en.getMaxLevel());
         };
 
         List<Enchantment> applicable = new ArrayList<>();

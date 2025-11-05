@@ -137,4 +137,10 @@ public final class ResearchItems implements SimpleSynchronousResourceReloadListe
         MAP.forEach((k, v) -> outer.put(k, Collections.unmodifiableMap(v)));
         return Collections.unmodifiableMap(outer);
     }
+
+    /** Client-side: replace the current map with data received from the server. */
+    public static void applySync(Map<String, Map<String, Integer>> data) {
+        MAP.clear();
+        data.forEach((itemId, enchMap) -> MAP.put(itemId, new HashMap<>(enchMap)));
+    }
 }

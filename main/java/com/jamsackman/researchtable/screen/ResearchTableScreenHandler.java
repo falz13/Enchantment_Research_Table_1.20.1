@@ -560,7 +560,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 final String enchIdStr = Registries.ENCHANTMENT.getId(ench).toString();
 
                 int beforeTotal  = state.getProgress(player.getUuid(), enchIdStr);
-                int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal);
+                int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .usableLevelFor(beforeTotal, ench.getMaxLevel());
 
                 int base = Math.max(1, level) * 100 * stack.getCount();
                 int gained = Math.max(1, Math.round(base * shelfMult)); // apply bookshelf bonus
@@ -578,15 +579,15 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 }
 
                 int afterTotal  = state.getProgress(player.getUuid(), enchIdStr);
-                int rawUsable   = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal);
-                int afterUsable = Math.min(rawUsable, ench.getMaxLevel());
+                int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .usableLevelFor(afterTotal, ench.getMaxLevel());
 
                 player.sendMessage(Text.literal("Researched ").append(ench.getName(Math.max(1, level))), false);
 
                 int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(Math.min(afterUsable + 1, ench.getMaxLevel()));
+                        .pointsForLevel(Math.min(afterUsable + 1, ench.getMaxLevel()), ench.getMaxLevel());
                 int capThreshold  = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(ench.getMaxLevel());
+                        .pointsForLevel(ench.getMaxLevel(), ench.getMaxLevel());
                 nextThreshold = Math.min(nextThreshold, capThreshold);
 
                 player.sendMessage(
@@ -661,29 +662,31 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             int basePoints      = Math.max(1, e.getValue()) * stack.getCount();
             int gained          = Math.max(1, Math.round(basePoints * shelfMult)); // apply bookshelf bonus
 
+            Enchantment target = null;
+            Identifier tid = Identifier.tryParse(targetEnchId);
+            if (tid != null) target = Registries.ENCHANTMENT.get(tid);
+            int maxLevel = (target != null) ? target.getMaxLevel() : Integer.MAX_VALUE;
+
             int beforeTotal  = state.getProgress(player.getUuid(), targetEnchId);
-            int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal);
+            int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                    .usableLevelFor(beforeTotal, maxLevel);
 
             state.addProgress(player.getUuid(), targetEnchId, gained);
             totalGained += gained;
 
             // feedback & unlock toasts per-enchant
             int afterTotal  = state.getProgress(player.getUuid(), targetEnchId);
-            int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal);
-
-            Enchantment target = null;
-            Identifier tid = Identifier.tryParse(targetEnchId);
-            if (tid != null) target = Registries.ENCHANTMENT.get(tid);
-            int maxLevel = (target != null) ? target.getMaxLevel() : Integer.MAX_VALUE;
-            afterUsable = Math.min(afterUsable, maxLevel);
+            int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                    .usableLevelFor(afterTotal, maxLevel);
 
             String niceName = (target != null) ? target.getName(1).getString() : targetEnchId;
             player.sendMessage(Text.literal("Researched " + niceName + " +" + gained), false);
 
             int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                    .pointsForLevel(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1));
+                    .pointsForLevel(Math.min(afterUsable + 1, maxLevel), maxLevel);
             if (target != null) {
-                int cap = com.jamsackman.researchtable.state.ResearchPersistentState.pointsForLevel(target.getMaxLevel());
+                int cap = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .pointsForLevel(maxLevel, maxLevel);
                 nextThreshold = Math.min(nextThreshold, cap);
             }
 
