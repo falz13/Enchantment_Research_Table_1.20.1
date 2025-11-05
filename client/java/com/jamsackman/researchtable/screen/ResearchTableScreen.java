@@ -54,6 +54,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
     private static final int RESEARCH_LINE_H          = 12;
     private static final int RESEARCH_POINTS_PER_LEVEL= 100;
+    private static final int ENCHANTED_ITEM_POINT_CAP = 500;
 
     private int researchScroll = 0;
     private int researchContentHeight = 0;
@@ -393,8 +394,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (!isUnlocked) {
                 rows.add(new Row(idStr, ench, "???", null, COLOR_LOCKED));
             } else {
-                int usable = ResearchPersistentState.usableLevelFor(total);
-                int capped = Math.min(usable, ench.getMaxLevel());
+                int capped = ResearchPersistentState.usableLevelFor(total, ench.getMaxLevel());
                 String name = Text.translatable(ench.getTranslationKey()).getString();
                 if (capped == 0) {
                     String subtitle = "Level I Locked";
@@ -578,16 +578,16 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         y += 6;
 
         int totalPts = ResearchClientState.progress().getOrDefault(enchId.toString(), 0);
-        int usable = ResearchPersistentState.usableLevelFor(totalPts);
         int maxLevel = ench.getMaxLevel();
+        int unlockedLevel = ResearchPersistentState.usableLevelFor(totalPts, maxLevel);
 
-        if (usable >= maxLevel) {
+        if (unlockedLevel >= maxLevel) {
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_complete"),
                     contentLeft, y, COLOR_COMPLETE, false);
             y += 12;
         } else {
-            int nextLevel = Math.min(usable + 1, maxLevel);
-            int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel);
+            int nextLevel = Math.min(unlockedLevel + 1, maxLevel);
+            int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel, maxLevel);
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.researching"),
                     contentLeft, y, 0xFFFFFFFF, false);
             y += 12;
@@ -622,17 +622,17 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         var mats = getResearchMaterialsFor(enchId.toString());
         int mx = contentLeft;
-        int my = y;
-        int show = Math.min(mats.size(), 4);
+        int show = mats.size();
         for (int i = 0; i < show; i++) {
             var me = mats.get(i);
-            ctx.drawItem(me.stack, mx + i * 18, my);
+            int rowY = y + i * 18;
+            ctx.drawItem(me.stack, mx, rowY);
             String p = "+" + me.points;
-            int tx = mx + i * 18 + 18 + 2;
-            int ty = my + 4;
+            int tx = mx + 18 + 2;
+            int ty = rowY + 4;
             ctx.drawText(this.textRenderer, Text.literal(p), tx, ty, COL_TEXT, false);
         }
-        y += 18;
+        y += Math.max(1, show) * 18;
 
         ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, y, 0x00000000, false);
         y += 10;
@@ -717,12 +717,14 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                 // b) enchanted items/books (discovery path)
                 Map<Enchantment, Integer> ench = EnchantmentHelper.get(stack);
                 if (!ench.isEmpty()) {
+                    int count = stack.getCount();
                     for (var e : ench.entrySet()) {
                         if (ResearchTableMod.isHiddenEnch(e.getKey())) continue;
                         Enchantment en = e.getKey();
                         int level = Math.max(1, e.getValue());
                         String name = Text.translatable(en.getTranslationKey()).getString();
-                        int points = level * RESEARCH_POINTS_PER_LEVEL;
+                        int base = level * RESEARCH_POINTS_PER_LEVEL * count;
+                        int points = Math.min(ENCHANTED_ITEM_POINT_CAP, base);
                         rows.add(name + " +" + points);
                     }
                 }
@@ -852,8 +854,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             Identifier id = Registries.ENCHANTMENT.getId(en);
             if (id == null) return 0;
             int total = prog.getOrDefault(id.toString(), 0);
-            int usable = ResearchPersistentState.usableLevelFor(total);
-            return Math.min(usable, en.getMaxLevel());
+            return ResearchPersistentState.usableLevelFor(total, en.getMaxLevel());
         };
 
         List<Enchantment> applicable = new ArrayList<>();
