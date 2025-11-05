@@ -1,0 +1,14 @@
+{
+  "display": {
+    "icon": { "item": "minecraft:knowledge_book" },
+    "title": "First day of school",
+    "description": "Earn research points for the first time",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "earned": { "trigger": "minecraft:impossible" }
+  }
+}

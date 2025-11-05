@@ -1,0 +1,29 @@
+{
+  "block.researchtable.research_table": "Research Table",
+
+  "screen.researchtable.title": "Research Table",
+  "screen.researchtable.tab.enchants": "Enchantments",
+  "screen.researchtable.tab.research": "Research",
+  "screen.researchtable.tab.apply": "Imbuing",
+  "screen.researchtable.header.enchants": "Enchantments",
+  "screen.researchtable.header.input": "Research",
+  "screen.researchtable.header.apply": "Apply (WIP)",
+  "screen.researchtable.input.help": " ",
+  "screen.researchtable.apply.placeholder": "Placeholder — coming soon",
+
+  "screen.researchtable.consume": "Research",
+  "screen.researchtable.level_unlocked": "Level %s unlocked (%s pts)",
+
+  "screen.researchtable.enchant_info_hint": "Select an enchantment",
+  "screen.researchtable.no_desc": "No description available.",
+  "screen.researchtable.max_level": "Max Level: %s",
+  "screen.researchtable.applicable_to": "Applicable to:",
+  "screen.researchtable.research_items": "Research items:",
+  "screen.researchtable.researching": "Researching",
+  "screen.researchtable.research_complete": "Researched!",
+  "screen.researchtable.undiscovered_hint": "Enchantment not discovered.",
+
+  "screen.researchtable.no_enchants": "No enchantments found.",
+  "screen.researchtable.not_discovered": "Not discovered yet.",
+  "enchantment.researchtable.imbued": "Imbued"
+}

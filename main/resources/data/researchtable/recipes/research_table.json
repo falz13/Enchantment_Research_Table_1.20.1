@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " L ",
+    "DBD",
+    "OOO"
+  ],
+  "key": {
+    "L": { "item": "minecraft:lapis_lazuli"},
+    "B": { "item": "minecraft:book" },
+    "D": { "item": "minecraft:diamond" },
+    "O": { "item": "minecraft:obsidian" }
+  },
+  "result": { "item": "researchtable:research_table" }
+}

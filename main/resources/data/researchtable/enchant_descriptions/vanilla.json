@@ -1,0 +1,50 @@
+{
+  "researchtable:imbued": "This item cannot be used for research",
+  "minecraft:sharpness": "Attacks deal extra damage.",
+  "minecraft:smite": "Attacks deal increased damage to undead.",
+  "minecraft:bane_of_arthropods": "Attacks deal increased damage to arthropods.",
+  "minecraft:knockback": "Increases the knockback effect on hit.",
+  "minecraft:fire_aspect": "Sets target on fire when hit.",
+  "minecraft:looting": "Enemies drop more and better loot.",
+  "minecraft:sweeping": "Sweeping attacks deal increased damage.",
+
+  "minecraft:efficiency": "Mining speed is increased.",
+  "minecraft:silk_touch": "Blocks drop themselves instead of raw drops.",
+  "minecraft:unbreaking": "Items take less durability damage.",
+  "minecraft:fortune": "Increases drop quantity from ores and crops.",
+  "minecraft:mending": "Repairs item using experience orbs.",
+
+  "minecraft:power": "Bow shots deal more damage.",
+  "minecraft:punch": "Bow attacks knockback targets further.",
+  "minecraft:flame": "Bow shots set targets on fire.",
+  "minecraft:infinity": "Arrows are not consumed while shooting.",
+  "minecraft:multishot": "Shoot 3 arrows at the cost of one.",
+  "minecraft:piercing": "Arrows go through multiple targets.",
+  "minecraft:quick_charge": "Reduces crossbow reload time.",
+
+  "minecraft:impaling": "Tridents deal extra damage to underwater creatures.",
+  "minecraft:riptide": "Throwing the trident propels you forward in water or rain.",
+  "minecraft:loyalty": "Trident returns after being thrown.",
+  "minecraft:channeling": "Strikes lightning when trident hits a target during storms.",
+
+  "minecraft:protection": "Reduces most incoming damage.",
+  "minecraft:fire_protection": "Reduces fire damage and burn time.",
+  "minecraft:blast_protection": "Reduces explosion damage and knockback.",
+  "minecraft:projectile_protection": "Reduces damage from projectiles.",
+
+  "minecraft:feather_falling": "Reduces fall damage.",
+  "minecraft:respiration": "Extends underwater breathing time.",
+  "minecraft:aqua_affinity": "Improves underwater mining speed.",
+  "minecraft:thorns": "Damages attackers when they hit you.",
+  "minecraft:depth_strider": "Increases underwater movement speed.",
+  "minecraft:frost_walker": "Walk on water by freezing it beneath you.",
+  "minecraft:soul_speed": "Move faster on soul sand and soul soil.",
+
+  "minecraft:swift_sneak": "Sneak movement speed is increased.",
+  "minecraft:breach": "Makes enemy armor less effective.",
+  "minecraft:density": "Makes falling attacks with maces do more damage.",
+  "minecraft:wind_burst": "Bounce into the air after a successful mace falling attack.",
+
+  "minecraft:luck_of_the_sea": "Increases chance of fishing rarer loot.",
+  "minecraft:lure": "Decreases the time taken to fish."
+}

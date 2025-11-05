@@ -1,0 +1,14 @@
+{
+  "display": {
+    "icon": { "item": "minecraft:anvil" },
+    "title": "Forging on",
+    "description": "Imbue 5 items",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "earned": { "trigger": "minecraft:impossible" }
+  }
+}

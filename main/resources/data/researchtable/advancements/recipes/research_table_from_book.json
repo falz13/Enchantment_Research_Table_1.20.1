@@ -1,0 +1,13 @@
+{
+  "criteria": {
+    "got_book": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [{ "items": ["minecraft:book"] }]
+      }
+    }
+  },
+  "rewards": {
+    "recipes": ["researchtable:research_table"]
+  }
+}

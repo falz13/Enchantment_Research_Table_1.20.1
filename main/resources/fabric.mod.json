@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "researchtable",
+  "version": "1.0.1",
+  "name": "ResearchTable",
+  "description": "Replaces enchanting with a Research Table that identifies enchantments and tracks per-player research.",
+  "authors": ["S Scott"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [ "com.jamsackman.researchtable.ResearchTableMod" ],
+    "client": [ "com.jamsackman.researchtable.ResearchTableClient" ]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "fabric": "*",
+    "minecraft": "1.20.1",
+    "java": ">=17"
+  },
+  "mixins": [
+    {
+      "config": "researchtable.mixins.json"
+    }
+
+  ]
+}

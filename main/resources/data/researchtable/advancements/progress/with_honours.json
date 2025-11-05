@@ -1,0 +1,14 @@
+{
+  "display": {
+    "icon": { "item": "minecraft:knowledge_book" },
+    "title": "With honours",
+    "description": "Earn 100,000 research points",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "earned": { "trigger": "minecraft:impossible" }
+  }
+}

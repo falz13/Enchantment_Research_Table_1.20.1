@@ -1,0 +1,14 @@
+{
+  "display": {
+    "icon": { "item": "minecraft:anvil" },
+    "title": "First day on the job",
+    "description": "Imbue your first item",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "earned": { "trigger": "minecraft:impossible" }
+  }
+}

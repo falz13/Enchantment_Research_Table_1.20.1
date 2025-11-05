@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.jamsackman.researchtable.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "researchtable.refmap.json",
+  "mixins": [
+    "AnvilScreenHandlerMixin",
+    "VillagerEntityMixin"
+  ],
+  "client": [
+    "SlotXYMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "researchtable.refmap.json"
+}
