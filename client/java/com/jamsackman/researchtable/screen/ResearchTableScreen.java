@@ -54,6 +54,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
     private static final int RESEARCH_LINE_H          = 12;
     private static final int RESEARCH_POINTS_PER_LEVEL= 100;
+    private static final int ENCHANTED_ITEM_POINT_CAP = 500;
 
     private int researchScroll = 0;
     private int researchContentHeight = 0;
@@ -621,17 +622,17 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         var mats = getResearchMaterialsFor(enchId.toString());
         int mx = contentLeft;
-        int my = y;
-        int show = Math.min(mats.size(), 4);
+        int show = mats.size();
         for (int i = 0; i < show; i++) {
             var me = mats.get(i);
-            ctx.drawItem(me.stack, mx + i * 18, my);
+            int rowY = y + i * 18;
+            ctx.drawItem(me.stack, mx, rowY);
             String p = "+" + me.points;
-            int tx = mx + i * 18 + 18 + 2;
-            int ty = my + 4;
+            int tx = mx + 18 + 2;
+            int ty = rowY + 4;
             ctx.drawText(this.textRenderer, Text.literal(p), tx, ty, COL_TEXT, false);
         }
-        y += 18;
+        y += Math.max(1, show) * 18;
 
         ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, y, 0x00000000, false);
         y += 10;
@@ -716,12 +717,14 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                 // b) enchanted items/books (discovery path)
                 Map<Enchantment, Integer> ench = EnchantmentHelper.get(stack);
                 if (!ench.isEmpty()) {
+                    int count = stack.getCount();
                     for (var e : ench.entrySet()) {
                         if (ResearchTableMod.isHiddenEnch(e.getKey())) continue;
                         Enchantment en = e.getKey();
                         int level = Math.max(1, e.getValue());
                         String name = Text.translatable(en.getTranslationKey()).getString();
-                        int points = level * RESEARCH_POINTS_PER_LEVEL;
+                        int base = level * RESEARCH_POINTS_PER_LEVEL * count;
+                        int points = Math.min(ENCHANTED_ITEM_POINT_CAP, base);
                         rows.add(name + " +" + points);
                     }
                 }

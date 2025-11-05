@@ -564,7 +564,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                         .usableLevelFor(beforeTotal, ench.getMaxLevel());
 
                 int base = Math.max(1, level) * 100 * stack.getCount();
-                int gained = Math.max(1, Math.round(base * shelfMult)); // apply bookshelf bonus
+                int cappedBase = Math.min(500, base);
+                int gained = Math.max(1, Math.round(cappedBase * shelfMult)); // apply bookshelf bonus
                 state.addProgress(player.getUuid(), enchIdStr, gained);
 
                 if (gained > 0) {
