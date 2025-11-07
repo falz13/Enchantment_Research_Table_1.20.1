@@ -188,7 +188,10 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                                          net.minecraft.enchantment.Enchantment b) {
         if (a == b) return true;
         try {
-            return a.canAccept(b) && b.canAccept(a);
+            return ((com.jamsackman.researchtable.mixin.access.EnchantCompat) (Object) a)
+                       .researchtable$canAccept(b)
+                   && ((com.jamsackman.researchtable.mixin.access.EnchantCompat) (Object) b)
+                       .researchtable$canAccept(a);
         } catch (Throwable t) {
             return true;
         }
