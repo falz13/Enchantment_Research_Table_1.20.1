@@ -987,7 +987,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                                          net.minecraft.enchantment.Enchantment b) {
         if (a == b) return true;
         try {
-            return a.canAccept(b) && b.canAccept(a);
+            return ((EnchantCompat) (Object) a).researchtable$canAccept(b)
+                && ((EnchantCompat) (Object) b).researchtable$canAccept(a);
         } catch (Throwable t) {
             return true;
         }
