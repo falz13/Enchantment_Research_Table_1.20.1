@@ -59,6 +59,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
     private final PlayerInventory playerInv;
 
     private final Property imbueModeProp = Property.create(); // 0 = research, 1 = imbue
+    private final Property shelfDiscountProp = Property.create(); // percentage (0-25)
     private final ScreenHandlerContext context;
 
     public boolean isImbueMode() { return imbueModeProp.get() == 1; }
@@ -68,6 +69,9 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         // Server-side: on ANY tab change, give items back
         if (playerInv.player instanceof ServerPlayerEntity sp) {
             returnInputsToPlayer(sp);
+        }
+        if (!on) {
+            shelfDiscountProp.set(0);
         }
     }
 
@@ -104,6 +108,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
         // sync imbueMode to client
         this.addProperty(imbueModeProp);
+        this.addProperty(shelfDiscountProp);
         this.setImbueMode(false); // start in "research" rules
 
         // 0: shared input slot (rules change by mode)
@@ -183,28 +188,9 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                                          net.minecraft.enchantment.Enchantment b) {
         if (a == b) return true;
         try {
-            // Try to reflectively access the protected canAccept method
-            var method = net.minecraft.enchantment.Enchantment.class
-                    .getDeclaredMethod("canAccept", net.minecraft.enchantment.Enchantment.class);
-            method.setAccessible(true);
-
-            boolean ab = (boolean) method.invoke(a, b);
-            boolean ba = (boolean) method.invoke(b, a);
-            return ab && ba;
-        } catch (NoSuchMethodException e) {
-            // Older mappings: fallback to isCompatibleWith if available
-            try {
-                var method = net.minecraft.enchantment.Enchantment.class
-                        .getDeclaredMethod("isCompatibleWith", net.minecraft.enchantment.Enchantment.class);
-                method.setAccessible(true);
-                boolean ab = (boolean) method.invoke(a, b);
-                boolean ba = (boolean) method.invoke(b, a);
-                return ab && ba;
-            } catch (Throwable inner) {
-                return true; // safest fallback — allow everything
-            }
+            return a.canAccept(b) && b.canAccept(a);
         } catch (Throwable t) {
-            return true; // don’t ever crash server/client
+            return true;
         }
     }
 
@@ -216,6 +202,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         previewInv.setStack(0, ItemStack.EMPTY);
         serverLevelCost = 0;
         serverLapisCost = 0;
+        shelfDiscountProp.set(0);
 
         if (input.isEmpty() || serverSelections.isEmpty()) return;
 
@@ -260,11 +247,20 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
         double term1 = Math.pow(currentLevels, 1.45);
         double term2 = Math.pow(10.0 * levelIncrease, 0.8);
-        serverLevelCost = (int)Math.ceil(term1 + term2);
+        double baseLevelCost = Math.ceil(term1 + term2);
 
         double l1 = Math.pow(currentLevels, 1.5);
         double l2 = Math.pow(levelIncrease, 1.5);
-        serverLapisCost = Math.min(64, (int)Math.ceil(l1 + l2));
+        double baseLapisCost = Math.ceil(l1 + l2);
+
+        float shelfMult = context.get((world, pos) -> bookshelfMultiplier(world, pos), 1.0f);
+        float discount = Math.max(0.0f, Math.min(0.25f, shelfMult - 1.0f));
+        shelfDiscountProp.set(Math.round(discount * 100.0f));
+
+        double factor = 1.0 - discount;
+        serverLevelCost = (int)Math.max(0, Math.ceil(baseLevelCost * factor));
+        serverLapisCost = (int)Math.max(0, Math.ceil(baseLapisCost * factor));
+        if (serverLapisCost > 64) serverLapisCost = 64;
 
         // Add IMBUED (level 1) to the result (doesn't affect cost)
         Enchantment imbued = Registries.ENCHANTMENT.get(ResearchTableMod.IMBUED_ID);
@@ -388,6 +384,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         previewInv.setStack(0, ItemStack.EMPTY);
         previewInv.markDirty();
 
+        shelfDiscountProp.set(0);
+
         this.sendContentUpdates();
 
         ResearchTableMod.LOGGER.info(
@@ -408,6 +406,12 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         });
         rebuildPreview(player);
         this.sendContentUpdates();
+    }
+
+    public int getShelfDiscountPercent() {
+        int value = shelfDiscountProp.get();
+        if (value < 0) return 0;
+        return Math.min(25, value);
     }
 
     private static boolean isImbued(ItemStack stack) {
