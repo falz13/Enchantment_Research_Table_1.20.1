@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "researchtable",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "name": "ResearchTable",
   "description": "Replaces enchanting with a Research Table that identifies enchantments and tracks per-player research.",
   "authors": ["S Scott"],
