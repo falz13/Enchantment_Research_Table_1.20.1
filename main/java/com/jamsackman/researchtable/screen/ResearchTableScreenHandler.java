@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.jamsackman.researchtable.ResearchTableMod;
 import com.jamsackman.researchtable.data.ResearchItems;
+import com.jamsackman.researchtable.mixin.access.EnchantCompat;
 
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -184,14 +185,14 @@ public class ResearchTableScreenHandler extends ScreenHandler {
     }
 
     /** True iff both enchantments mutually accept each other. */
-    private static boolean areCompatible(net.minecraft.enchantment.Enchantment a,
-                                         net.minecraft.enchantment.Enchantment b) {
-        if (a == b) return true;
+    private static boolean areCompatible(Enchantment a, Enchantment b) {
+        return accepts(a, b) && accepts(b, a);
+    }
+
+    private static boolean accepts(Enchantment owner, Enchantment other) {
+        if (owner == null || other == null || owner == other) return true;
         try {
-            return ((com.jamsackman.researchtable.mixin.access.EnchantCompat) (Object) a)
-                       .researchtable$canAccept(b)
-                   && ((com.jamsackman.researchtable.mixin.access.EnchantCompat) (Object) b)
-                       .researchtable$canAccept(a);
+            return ((EnchantCompat) owner).researchtable$canAccept(other);
         } catch (Throwable t) {
             return true;
         }
@@ -214,6 +215,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
         // Merge existing + selected enchants
         Map<Enchantment,Integer> current = EnchantmentHelper.get(out);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
         int currentLevels = current.values().stream().mapToInt(Integer::intValue).sum();
 
         Map<Enchantment,Integer> result = new HashMap<>(current);
@@ -321,6 +323,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         if (base.isEmpty()) return;
 
         Map<Enchantment,Integer> current = EnchantmentHelper.get(base);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
         Map<Enchantment,Integer> result = new HashMap<>(current);
 
         for (var e : serverSelections.entrySet()) {

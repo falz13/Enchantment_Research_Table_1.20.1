@@ -848,6 +848,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         imbueRows.clear();
 
         Map<Enchantment, Integer> current = EnchantmentHelper.get(stack);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
         enchitemlevels = current.values().stream().mapToInt(Integer::intValue).sum();
 
         var unlockedIds = ResearchClientState.unlocked(); // Set<String>
@@ -983,12 +984,14 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         }
     }
 
-    private static boolean areCompatible(net.minecraft.enchantment.Enchantment a,
-                                         net.minecraft.enchantment.Enchantment b) {
-        if (a == b) return true;
+    private static boolean areCompatible(Enchantment a, Enchantment b) {
+        return accepts(a, b) && accepts(b, a);
+    }
+
+    private static boolean accepts(Enchantment owner, Enchantment other) {
+        if (owner == null || other == null || owner == other) return true;
         try {
-            return ((EnchantCompat) (Object) a).researchtable$canAccept(b)
-                && ((EnchantCompat) (Object) b).researchtable$canAccept(a);
+            return ((EnchantCompat) owner).researchtable$canAccept(other);
         } catch (Throwable t) {
             return true;
         }
