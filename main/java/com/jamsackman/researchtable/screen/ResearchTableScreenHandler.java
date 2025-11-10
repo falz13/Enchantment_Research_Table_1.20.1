@@ -405,10 +405,33 @@ public class ResearchTableScreenHandler extends ScreenHandler {
     public void serverSetImbueSelections(ServerPlayerEntity player,
                                          Map<Identifier, Integer> ids) {
         serverSelections.clear();
+
+        ItemStack base = this.getSlot(INPUT_SLOT).getStack();
+        Map<Enchantment, Integer> current = EnchantmentHelper.get(base);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
+
         ids.forEach((id, lvl) -> {
             if (ResearchTableMod.isHiddenId(id)) return;
-            Enchantment e = Registries.ENCHANTMENT.get(id);
-            if (e != null && lvl > 0) serverSelections.put(e, Math.min(lvl, e.getMaxLevel()));
+            Enchantment ench = Registries.ENCHANTMENT.get(id);
+            if (ench == null) return;
+
+            int clamped = Math.min(Math.max(1, lvl), ench.getMaxLevel());
+            if (clamped <= 0) return;
+
+            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
+            if (!ok) return;
+
+            ok = serverSelections.keySet().stream()
+                    .filter(other -> other != ench)
+                    .allMatch(other -> areCompatible(ench, other));
+            if (!ok) return;
+
+            if (base.isEmpty()) return;
+            try {
+                if (!ench.isAcceptableItem(base)) return;
+            } catch (Throwable ignored) {}
+
+            serverSelections.put(ench, clamped);
         });
         rebuildPreview(player);
         this.sendContentUpdates();

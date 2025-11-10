@@ -815,7 +815,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                 boolean withinY = mouseY >= drawTop && mouseY <= drawBottom;
 
                 boolean isSelected = imbueSelected.containsKey(r.ench);
-                int textcol_if_incompat = (r.incompatible) ? COLOR_LOCKED : COL_TEXT;
+                int textcol_if_incompat = (r.incompatible) ? COL_LOCKED : COL_TEXT;
 
                 ctx.fill(listLeft, drawTop, listRight, drawBottom, ROW_BG_BASE);
                 if (isSelected) {
@@ -939,6 +939,13 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         }
 
         flagIncompatibles(current.keySet());
+
+        boolean removed = pruneInvalidSelections();
+        if (removed) {
+            flagIncompatibles(current.keySet());
+            sendImbueSelectionsToServer();
+        }
+
         computeCosts();
 
         for (ImbueRow r : imbueRows) {
@@ -957,6 +964,16 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         hdr.incompatible = false;
         hdr.selected = false;
         imbueRows.add(hdr);
+    }
+
+    private boolean pruneInvalidSelections() {
+        java.util.Set<Enchantment> valid = new java.util.HashSet<>();
+        for (ImbueRow r : imbueRows) {
+            if (r.ench != null && r.section == Section.UNLOCKED && !r.incompatible) {
+                valid.add(r.ench);
+            }
+        }
+        return imbueSelected.keySet().removeIf(en -> !valid.contains(en));
     }
 
     private void flagIncompatibles(Set<Enchantment> currentOnItem) {
@@ -992,6 +1009,27 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         if (owner == null || other == null || owner == other) return true;
         try {
             return ((EnchantCompat) owner).researchtable$canAccept(other);
+        } catch (Throwable t) {
+            return true;
+        }
+    }
+
+    private boolean isSelectionAllowed(Enchantment ench, ItemStack stack) {
+        if (ench == null) return false;
+
+        Map<Enchantment, Integer> current = EnchantmentHelper.get(stack);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
+
+        for (Enchantment cur : current.keySet()) {
+            if (cur != ench && !areCompatible(ench, cur)) return false;
+        }
+
+        for (Enchantment other : imbueSelected.keySet()) {
+            if (other != ench && !areCompatible(ench, other)) return false;
+        }
+
+        try {
+            return ench.isAcceptableItem(stack);
         } catch (Throwable t) {
             return true;
         }
@@ -1238,12 +1276,20 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                             if (imbueSelected.containsKey(r.ench)) {
                                 imbueSelected.remove(r.ench);
                             } else {
+                                if (!isSelectionAllowed(r.ench, st)) {
+                                    return true;
+                                }
                                 int lvl = Math.max(1, r.displayLevel);
                                 imbueSelected.put(r.ench, lvl);
                             }
 
                             Map<Enchantment, Integer> cur = EnchantmentHelper.get(st);
+                            cur.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
                             flagIncompatibles(cur.keySet());
+                            boolean pruned = pruneInvalidSelections();
+                            if (pruned) {
+                                flagIncompatibles(cur.keySet());
+                            }
                             computeCosts();
 
                             sendImbueSelectionsToServer();
