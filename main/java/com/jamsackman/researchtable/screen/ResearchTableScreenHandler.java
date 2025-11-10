@@ -59,6 +59,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
     private final PlayerInventory playerInv;
 
     private final Property imbueModeProp = Property.create(); // 0 = research, 1 = imbue
+    private final Property shelfDiscountProp = Property.create(); // percentage (0-25)
     private final ScreenHandlerContext context;
 
     public boolean isImbueMode() { return imbueModeProp.get() == 1; }
@@ -68,6 +69,9 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         // Server-side: on ANY tab change, give items back
         if (playerInv.player instanceof ServerPlayerEntity sp) {
             returnInputsToPlayer(sp);
+        }
+        if (!on) {
+            shelfDiscountProp.set(0);
         }
     }
 
@@ -104,6 +108,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
         // sync imbueMode to client
         this.addProperty(imbueModeProp);
+        this.addProperty(shelfDiscountProp);
         this.setImbueMode(false); // start in "research" rules
 
         // 0: shared input slot (rules change by mode)
@@ -183,28 +188,9 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                                          net.minecraft.enchantment.Enchantment b) {
         if (a == b) return true;
         try {
-            // Try to reflectively access the protected canAccept method
-            var method = net.minecraft.enchantment.Enchantment.class
-                    .getDeclaredMethod("canAccept", net.minecraft.enchantment.Enchantment.class);
-            method.setAccessible(true);
-
-            boolean ab = (boolean) method.invoke(a, b);
-            boolean ba = (boolean) method.invoke(b, a);
-            return ab && ba;
-        } catch (NoSuchMethodException e) {
-            // Older mappings: fallback to isCompatibleWith if available
-            try {
-                var method = net.minecraft.enchantment.Enchantment.class
-                        .getDeclaredMethod("isCompatibleWith", net.minecraft.enchantment.Enchantment.class);
-                method.setAccessible(true);
-                boolean ab = (boolean) method.invoke(a, b);
-                boolean ba = (boolean) method.invoke(b, a);
-                return ab && ba;
-            } catch (Throwable inner) {
-                return true; // safest fallback — allow everything
-            }
+            return net.minecraft.enchantment.Enchantment.canCombine(a, b);
         } catch (Throwable t) {
-            return true; // don’t ever crash server/client
+            return true;
         }
     }
 
@@ -216,6 +202,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         previewInv.setStack(0, ItemStack.EMPTY);
         serverLevelCost = 0;
         serverLapisCost = 0;
+        shelfDiscountProp.set(0);
 
         if (input.isEmpty() || serverSelections.isEmpty()) return;
 
@@ -223,48 +210,85 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         ItemStack out = input.copy();
 
         // Merge existing + selected enchants
-        Map<Enchantment,Integer> current = EnchantmentHelper.get(out);
+        Map<Enchantment,Integer> currentAll = EnchantmentHelper.get(out);
+        Map<Enchantment,Integer> current = new HashMap<>();
+        for (var entry : currentAll.entrySet()) {
+            if (!ResearchTableMod.isHiddenEnch(entry.getKey())) {
+                current.put(entry.getKey(), entry.getValue());
+            }
+        }
+
         int currentLevels = current.values().stream().mapToInt(Integer::intValue).sum();
 
         Map<Enchantment,Integer> result = new HashMap<>(current);
-        serverSelections.forEach((e, lvl) -> {
-            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(e, cur));
-            ok = ok && serverSelections.keySet().stream().filter(other -> other != e).allMatch(other -> areCompatible(e, other));
-            if (ok) result.put(e, Math.min(lvl, e.getMaxLevel()));
-            boolean allCompat = true;
-            List<Enchantment> keys = new java.util.ArrayList<>(result.keySet());
-            for (int i = 0; i < keys.size() && allCompat; i++) {
-                for (int j = i + 1; j < keys.size() && allCompat; j++) {
-                    if (!areCompatible(keys.get(i), keys.get(j))) allCompat = false;
-                }
+        for (var entry : serverSelections.entrySet()) {
+            Enchantment ench = entry.getKey();
+            int lvl = entry.getValue();
+
+            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
+            if (ok) {
+                ok = serverSelections.keySet().stream()
+                        .filter(other -> other != ench)
+                        .allMatch(other -> areCompatible(ench, other));
             }
-            boolean acceptableForItem = keys.stream().allMatch(en -> {
-                try { return en.isAcceptableItem(out); } catch (Throwable t) { return true; }
-            });
-            if (!allCompat || !acceptableForItem) {
-                // if it fails, do NOT offer a preview or a cost — player must resolve selection
+
+            if (!ok) {
                 previewInv.setStack(0, ItemStack.EMPTY);
                 serverLevelCost = 0;
                 serverLapisCost = 0;
                 return;
             }
+
+            result.put(ench, Math.min(lvl, ench.getMaxLevel()));
+        }
+
+        List<Enchantment> keys = new java.util.ArrayList<>(result.keySet());
+        for (int i = 0; i < keys.size(); i++) {
+            for (int j = i + 1; j < keys.size(); j++) {
+                if (!areCompatible(keys.get(i), keys.get(j))) {
+                    previewInv.setStack(0, ItemStack.EMPTY);
+                    serverLevelCost = 0;
+                    serverLapisCost = 0;
+                    return;
+                }
+            }
+        }
+
+        boolean acceptableForItem = keys.stream().allMatch(en -> {
+            try { return en.isAcceptableItem(out); } catch (Throwable t) { return true; }
         });
+        if (!acceptableForItem) {
+            previewInv.setStack(0, ItemStack.EMPTY);
+            serverLevelCost = 0;
+            serverLapisCost = 0;
+            return;
+        }
 
         // selected levels (ignore IMBUED in cost)
         int levelIncrease = 0;
         for (var e : serverSelections.entrySet()) {
-            int cur = current.getOrDefault(e.getKey(), 0);
-            int target = Math.min(e.getValue(), e.getKey().getMaxLevel());
+            Enchantment ench = e.getKey();
+            int cur = current.getOrDefault(ench, 0);
+            int target = Math.min(e.getValue(), ench.getMaxLevel());
             levelIncrease += Math.max(0, target - cur);
         }
 
         double term1 = Math.pow(currentLevels, 1.45);
         double term2 = Math.pow(10.0 * levelIncrease, 0.8);
-        serverLevelCost = (int)Math.ceil(term1 + term2);
+        double baseLevelCost = Math.ceil(term1 + term2);
 
         double l1 = Math.pow(currentLevels, 1.5);
         double l2 = Math.pow(levelIncrease, 1.5);
-        serverLapisCost = Math.min(64, (int)Math.ceil(l1 + l2));
+        double baseLapisCost = Math.ceil(l1 + l2);
+
+        float shelfMult = context.get((world, pos) -> bookshelfMultiplier(world, pos), 1.0f);
+        float discount = Math.max(0.0f, Math.min(0.25f, shelfMult - 1.0f));
+        shelfDiscountProp.set(Math.round(discount * 100.0f));
+
+        double factor = 1.0 - discount;
+        serverLevelCost = (int)Math.max(0, Math.ceil(baseLevelCost * factor));
+        serverLapisCost = (int)Math.max(0, Math.ceil(baseLapisCost * factor));
+        if (serverLapisCost > 64) serverLapisCost = 64;
 
         // Add IMBUED (level 1) to the result (doesn't affect cost)
         Enchantment imbued = Registries.ENCHANTMENT.get(ResearchTableMod.IMBUED_ID);
@@ -388,6 +412,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         previewInv.setStack(0, ItemStack.EMPTY);
         previewInv.markDirty();
 
+        shelfDiscountProp.set(0);
+
         this.sendContentUpdates();
 
         ResearchTableMod.LOGGER.info(
@@ -401,13 +427,44 @@ public class ResearchTableScreenHandler extends ScreenHandler {
     public void serverSetImbueSelections(ServerPlayerEntity player,
                                          Map<Identifier, Integer> ids) {
         serverSelections.clear();
+
+        ItemStack base = this.getSlot(INPUT_SLOT).getStack();
+        Map<Enchantment, Integer> current = new HashMap<>(EnchantmentHelper.get(base));
+        current.keySet().removeIf(ResearchTableMod::isHiddenEnch);
+
         ids.forEach((id, lvl) -> {
             if (ResearchTableMod.isHiddenId(id)) return;
-            Enchantment e = Registries.ENCHANTMENT.get(id);
-            if (e != null && lvl > 0) serverSelections.put(e, Math.min(lvl, e.getMaxLevel()));
+            Enchantment ench = Registries.ENCHANTMENT.get(id);
+            if (ench == null) return;
+
+            int clamped = Math.min(Math.max(1, lvl), ench.getMaxLevel());
+
+            boolean acceptable = true;
+            try {
+                acceptable = ench.isAcceptableItem(base);
+            } catch (Throwable ignored) {}
+            if (!acceptable) return;
+
+            boolean conflicts = current.keySet().stream()
+                    .filter(existing -> existing != ench)
+                    .anyMatch(existing -> !areCompatible(existing, ench));
+            if (conflicts) return;
+
+            conflicts = serverSelections.keySet().stream()
+                    .filter(existing -> existing != ench)
+                    .anyMatch(existing -> !areCompatible(existing, ench));
+            if (conflicts) return;
+
+            serverSelections.put(ench, clamped);
         });
         rebuildPreview(player);
         this.sendContentUpdates();
+    }
+
+    public int getShelfDiscountPercent() {
+        int value = shelfDiscountProp.get();
+        if (value < 0) return 0;
+        return Math.min(25, value);
     }
 
     private static boolean isImbued(ItemStack stack) {
@@ -560,10 +617,12 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 final String enchIdStr = Registries.ENCHANTMENT.getId(ench).toString();
 
                 int beforeTotal  = state.getProgress(player.getUuid(), enchIdStr);
-                int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal);
+                int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .usableLevelFor(beforeTotal, ench.getMaxLevel());
 
                 int base = Math.max(1, level) * 100 * stack.getCount();
-                int gained = Math.max(1, Math.round(base * shelfMult)); // apply bookshelf bonus
+                int cappedBase = Math.min(500, base);
+                int gained = Math.max(1, Math.round(cappedBase * shelfMult)); // apply bookshelf bonus
                 state.addProgress(player.getUuid(), enchIdStr, gained);
 
                 if (gained > 0) {
@@ -578,15 +637,15 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 }
 
                 int afterTotal  = state.getProgress(player.getUuid(), enchIdStr);
-                int rawUsable   = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal);
-                int afterUsable = Math.min(rawUsable, ench.getMaxLevel());
+                int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .usableLevelFor(afterTotal, ench.getMaxLevel());
 
                 player.sendMessage(Text.literal("Researched ").append(ench.getName(Math.max(1, level))), false);
 
                 int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(Math.min(afterUsable + 1, ench.getMaxLevel()));
+                        .pointsForLevel(Math.min(afterUsable + 1, ench.getMaxLevel()), ench.getMaxLevel());
                 int capThreshold  = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(ench.getMaxLevel());
+                        .pointsForLevel(ench.getMaxLevel(), ench.getMaxLevel());
                 nextThreshold = Math.min(nextThreshold, capThreshold);
 
                 player.sendMessage(
@@ -661,29 +720,31 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             int basePoints      = Math.max(1, e.getValue()) * stack.getCount();
             int gained          = Math.max(1, Math.round(basePoints * shelfMult)); // apply bookshelf bonus
 
+            Enchantment target = null;
+            Identifier tid = Identifier.tryParse(targetEnchId);
+            if (tid != null) target = Registries.ENCHANTMENT.get(tid);
+            int maxLevel = (target != null) ? target.getMaxLevel() : Integer.MAX_VALUE;
+
             int beforeTotal  = state.getProgress(player.getUuid(), targetEnchId);
-            int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal);
+            int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                    .usableLevelFor(beforeTotal, maxLevel);
 
             state.addProgress(player.getUuid(), targetEnchId, gained);
             totalGained += gained;
 
             // feedback & unlock toasts per-enchant
             int afterTotal  = state.getProgress(player.getUuid(), targetEnchId);
-            int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal);
-
-            Enchantment target = null;
-            Identifier tid = Identifier.tryParse(targetEnchId);
-            if (tid != null) target = Registries.ENCHANTMENT.get(tid);
-            int maxLevel = (target != null) ? target.getMaxLevel() : Integer.MAX_VALUE;
-            afterUsable = Math.min(afterUsable, maxLevel);
+            int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                    .usableLevelFor(afterTotal, maxLevel);
 
             String niceName = (target != null) ? target.getName(1).getString() : targetEnchId;
             player.sendMessage(Text.literal("Researched " + niceName + " +" + gained), false);
 
             int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                    .pointsForLevel(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1));
+                    .pointsForLevel(Math.min(afterUsable + 1, maxLevel), maxLevel);
             if (target != null) {
-                int cap = com.jamsackman.researchtable.state.ResearchPersistentState.pointsForLevel(target.getMaxLevel());
+                int cap = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .pointsForLevel(maxLevel, maxLevel);
                 nextThreshold = Math.min(nextThreshold, cap);
             }
 

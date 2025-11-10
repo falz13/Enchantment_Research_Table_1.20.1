@@ -5,11 +5,13 @@ import com.jamsackman.researchtable.block.ModBlockEntities;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Set;
+import java.util.HashMap;
 import java.util.HashSet;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.minecraft.client.render.RenderLayer;
 import com.jamsackman.researchtable.client.ResearchClientState;
+import com.jamsackman.researchtable.data.ResearchItems;
 import com.jamsackman.researchtable.client.render.ResearchTableBER;
 import com.jamsackman.researchtable.screen.ModScreens;
 import com.jamsackman.researchtable.screen.ResearchTableScreen;
@@ -87,6 +89,28 @@ public class ResearchTableClient implements ClientModInitializer {
                 map.forEach(com.jamsackman.researchtable.client.ClientEnchantDescriptions::put);
                 // optional debug:
                 System.out.println("[ResearchTable] Received " + size + " descriptions from server");
+            });
+        });
+
+        // Receive server → client research item sync (datapack-driven)
+        ClientPlayNetworking.registerGlobalReceiver(ResearchTableMod.SYNC_RESEARCH_ITEMS_PACKET, (client, handler, buf, responseSender) -> {
+            int outer = buf.readVarInt();
+            Map<String, Map<String, Integer>> data = new HashMap<>(outer);
+            for (int i = 0; i < outer; i++) {
+                String itemId = buf.readString(512);
+                int innerSize = buf.readVarInt();
+                Map<String, Integer> inner = new HashMap<>(innerSize);
+                for (int j = 0; j < innerSize; j++) {
+                    String enchId = buf.readString(512);
+                    int points = buf.readVarInt();
+                    inner.put(enchId, points);
+                }
+                data.put(itemId, inner);
+            }
+
+            client.execute(() -> {
+                ResearchItems.applySync(data);
+                ResearchTableMod.LOGGER.info("[ResearchTable] Synced {} research item entries", data.size());
             });
         });
     }
