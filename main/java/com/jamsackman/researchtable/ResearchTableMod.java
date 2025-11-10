@@ -1,7 +1,6 @@
 package com.jamsackman.researchtable;
 
 import com.jamsackman.researchtable.block.ModBlocks;
-import com.jamsackman.researchtable.data.ResearchItems;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.api.ModInitializer;
@@ -59,7 +58,6 @@ public class ResearchTableMod implements ModInitializer {
     // Packets
     public static final Identifier CONSUME_INPUT_PACKET = new Identifier(MODID, "consume_input");
     public static final Identifier SYNC_RESEARCH_PACKET  = new Identifier(MODID, "sync_research");
-    public static final Identifier SYNC_RESEARCH_ITEMS_PACKET = new Identifier(MODID, "sync_research_items");
     public static final Identifier REQUEST_SYNC_PACKET = new Identifier(MODID, "request_sync");
     public static final Identifier SYNC_DESCRIPTIONS = new Identifier(MODID, "sync_descriptions");
     public static final Identifier SET_IMBUE_MODE = new Identifier("researchtable", "set_imbue_mode");
@@ -164,10 +162,7 @@ public class ResearchTableMod implements ModInitializer {
 
         // Client -> Server: request a fresh research snapshot
         ServerPlayNetworking.registerGlobalReceiver(REQUEST_SYNC_PACKET, (server, player, handler, buf, responseSender) ->
-                server.execute(() -> {
-                    sendResearchSync(player);
-                    sendResearchItemsSync(player);
-                }));
+                server.execute(() -> sendResearchSync(player)));
 
         // Client -> Server: consume input
         ServerPlayNetworking.registerGlobalReceiver(CONSUME_INPUT_PACKET, (server, player, handler, buf, responseSender) ->
@@ -206,7 +201,6 @@ public class ResearchTableMod implements ModInitializer {
                 System.out.println("[ResearchTable] Resyncing enchant descriptions to " + players.size() + " player(s) after /reload");
                 for (ServerPlayerEntity p : players) {
                     syncDescriptionsTo(p);
-                    sendResearchItemsSync(p);
                 }
             });
         });
@@ -214,7 +208,6 @@ public class ResearchTableMod implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             server.execute(() -> {
                 sendResearchSync(handler.player);
-                sendResearchItemsSync(handler.player);
             });
         });
 
@@ -288,23 +281,5 @@ public class ResearchTableMod implements ModInitializer {
         for (String id : unlocked) buf.writeString(id);
 
         ServerPlayNetworking.send(player, SYNC_RESEARCH_PACKET, buf);
-    }
-
-    /** Server → Client: Send the datapack-driven research item mappings. */
-    public static void sendResearchItemsSync(ServerPlayerEntity player) {
-        Map<String, Map<String, Integer>> entries = ResearchItems.entries();
-        PacketByteBuf buf = PacketByteBufs.create();
-
-        buf.writeVarInt(entries.size());
-        entries.forEach((itemId, enchMap) -> {
-            buf.writeString(itemId);
-            buf.writeVarInt(enchMap.size());
-            enchMap.forEach((enchId, points) -> {
-                buf.writeString(enchId);
-                buf.writeVarInt(points);
-            });
-        });
-
-        ServerPlayNetworking.send(player, SYNC_RESEARCH_ITEMS_PACKET, buf);
     }
 }

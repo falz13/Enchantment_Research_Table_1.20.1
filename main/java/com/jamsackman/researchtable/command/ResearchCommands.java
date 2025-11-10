@@ -58,6 +58,8 @@ public class ResearchCommands {
                                                     var server = ctx.getSource().getServer();
                                                     var state = ResearchTableMod.getResearchState(server);
 
+                                                    int pts = ResearchPersistentState.pointsForLevel(level);
+
                                                     boolean all = enchOrAll.getPath().equals("all");
                                                     if (all) {
                                                         // set every enchant to at least this level
@@ -65,20 +67,11 @@ public class ResearchCommands {
                                                         reg.forEach(ench -> {
                                                             var id = reg.getId(ench);
                                                             if (id == null) return;
-                                                            int pts = ResearchPersistentState.pointsForLevel(level, ench.getMaxLevel());
                                                             for (ServerPlayerEntity p : targets) {
                                                                 state.setProgressToAtLeast(p.getUuid(), id.toString(), pts);
                                                             }
                                                         });
                                                     } else {
-                                                        int pts;
-                                                        var reg = server.getRegistryManager().get(net.minecraft.registry.RegistryKeys.ENCHANTMENT);
-                                                        var ench = reg.get(enchOrAll);
-                                                        if (ench != null) {
-                                                            pts = ResearchPersistentState.pointsForLevel(level, ench.getMaxLevel());
-                                                        } else {
-                                                            pts = ResearchPersistentState.pointsForLevel(level);
-                                                        }
                                                         for (ServerPlayerEntity p : targets) {
                                                             state.setProgressToAtLeast(p.getUuid(), enchOrAll.toString(), pts);
                                                         }

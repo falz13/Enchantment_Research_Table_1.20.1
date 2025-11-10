@@ -2,10 +2,8 @@ package com.jamsackman.researchtable.item;
 
 import com.jamsackman.researchtable.block.ModBlocks;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroups;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 
@@ -16,9 +14,5 @@ public final class ModItems {
             new BlockItem(ModBlocks.RESEARCH_TABLE, new FabricItemSettings())
     );
 
-    public static void registerAll() {
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries ->
-                entries.add(RESEARCH_TABLE_ITEM)
-        );
-    } // force class init
+    public static void registerAll() {} // force class init
 }
