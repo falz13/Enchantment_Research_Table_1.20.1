@@ -23,6 +23,7 @@ import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -182,6 +183,11 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             }
         }
         return sb.toString();
+    }
+
+    private static Text createUnlockedMessage(Text base) {
+        MutableText copy = base.copy();
+        return copy.append(Text.literal(" unlocked!")).styled(style -> style.withColor(ResearchTableMod.COLOR_UNLOCKED));
     }
 
     /** True iff both enchantments mutually accept each other. */
@@ -634,11 +640,9 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
                 var world = player.getWorld();
                 if (afterUsable > beforeUsable) {
+                    Text baseName = Text.translatable(ench.getTranslationKey());
                     for (int lvl = beforeUsable + 1; lvl <= afterUsable; lvl++) {
-                        player.sendMessage(
-                                Text.literal(ench.getName(1).getString() + " Level " + toRoman(lvl) + " unlocked!"),
-                                false
-                        );
+                        player.sendMessage(createUnlockedMessage(baseName), false);
                         world.playSound(
                                 null, player.getBlockPos(),
                                 net.minecraft.sound.SoundEvents.ENTITY_PLAYER_LEVELUP,
@@ -732,8 +736,11 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
             var world = player.getWorld();
             if (afterUsable > beforeUsable) {
+                Text baseName = (target != null)
+                        ? Text.translatable(target.getTranslationKey())
+                        : Text.literal(niceName);
                 for (int lvl = beforeUsable + 1; lvl <= afterUsable; lvl++) {
-                    player.sendMessage(Text.literal(niceName + " Level " + toRoman(lvl) + " unlocked!"), false);
+                    player.sendMessage(createUnlockedMessage(baseName), false);
                     world.playSound(
                             null, player.getBlockPos(),
                             net.minecraft.sound.SoundEvents.ENTITY_PLAYER_LEVELUP,

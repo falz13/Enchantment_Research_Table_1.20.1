@@ -81,7 +81,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
     private static final int COL_HEADER_TEXT   = 0xFF2B2F33;
     private static final int COL_TEXT          = 0xFFE0E0E0;
     private static final int COLOR_LOCKED      = 0xFF9AA0A6;
-    private static final int COLOR_UNLOCKED    = 0xFFB6F2A2;
+    private static final int COLOR_UNLOCKED    = ResearchTableMod.COLOR_UNLOCKED;
     private static final int COLOR_COMPLETE    = 0xFF47E5D2;
     private static final int COLOR_HOVER       = 0x669B8C6E;
 

@@ -1,24 +1,32 @@
 package com.jamsackman.researchtable;
 
-import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import com.jamsackman.researchtable.block.ModBlockEntities;
-import java.util.Map;
-import java.util.LinkedHashMap;
-import java.util.Set;
-import java.util.HashMap;
-import java.util.HashSet;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
-import net.minecraft.client.render.RenderLayer;
 import com.jamsackman.researchtable.client.ResearchClientState;
 import com.jamsackman.researchtable.data.ResearchItems;
 import com.jamsackman.researchtable.client.render.ResearchTableBER;
+import com.jamsackman.researchtable.data.ResearchItems;
 import com.jamsackman.researchtable.screen.ModScreens;
 import com.jamsackman.researchtable.screen.ResearchTableScreen;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.registry.Registries;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class ResearchTableClient implements ClientModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger("ResearchTableClient");
@@ -38,6 +46,46 @@ public class ResearchTableClient implements ClientModInitializer {
                 com.jamsackman.researchtable.block.ModBlocks.RESEARCH_TABLE,
                 RenderLayer.getCutout()
         );
+
+        ItemTooltipCallback.EVENT.register((stack, context, lines) -> {
+            if (stack == null || stack.isEmpty()) return;
+
+            Identifier itemId = Registries.ITEM.getId(stack.getItem());
+            if (itemId == null) return;
+
+            Map<String, Integer> mappings = ResearchItems.getAllForItem(itemId.toString());
+            if (mappings.isEmpty()) return;
+
+            Set<String> unlocked = ResearchClientState.unlocked();
+            List<String> enchantIds = new ArrayList<>(mappings.keySet());
+            enchantIds.sort((a, b) -> {
+                Identifier ida = Identifier.tryParse(a);
+                Identifier idb = Identifier.tryParse(b);
+                Enchantment ea = ida != null ? Registries.ENCHANTMENT.get(ida) : null;
+                Enchantment eb = idb != null ? Registries.ENCHANTMENT.get(idb) : null;
+                if (ResearchTableMod.isHiddenId(ida)) ea = null;
+                if (ResearchTableMod.isHiddenId(idb)) eb = null;
+                String na = (ea != null) ? Text.translatable(ea.getTranslationKey()).getString() : a;
+                String nb = (eb != null) ? Text.translatable(eb.getTranslationKey()).getString() : b;
+                return na.compareToIgnoreCase(nb);
+            });
+
+            for (String enchId : enchantIds) {
+                if (ResearchTableMod.isHiddenId(enchId)) continue;
+
+                Identifier enchantmentId = Identifier.tryParse(enchId);
+                Enchantment enchantment = enchantmentId != null ? Registries.ENCHANTMENT.get(enchantmentId) : null;
+
+                boolean discovered = enchantment != null && unlocked.contains(enchId);
+                Text line = Text.literal("Research: ");
+                if (discovered) {
+                    line = line.append(Text.translatable(enchantment.getTranslationKey()));
+                } else {
+                    line = line.append(Text.translatable("screen.researchtable.undiscovered_hint"));
+                }
+                lines.add(line);
+            }
+        });
 
         // Receive server → client research sync
         ClientPlayNetworking.registerGlobalReceiver(ResearchTableMod.SYNC_RESEARCH_PACKET, (client, handler, buf, responseSender) -> {
