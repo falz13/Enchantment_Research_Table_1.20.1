@@ -19,6 +19,16 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Formatting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,11 +83,11 @@ public class ResearchTableClient implements ClientModInitializer {
                 Enchantment enchantment = enchantmentId != null ? Registries.ENCHANTMENT.get(enchantmentId) : null;
 
                 boolean discovered = enchantment != null && unlocked.contains(enchId);
-                MutableText line = Text.literal("Research: ");
+                MutableText line = Text.literal("Research: ").formatted(Formatting.GRAY);
                 if (discovered) {
-                    line = line.append(Text.translatable(enchantment.getTranslationKey()));
+                    line = line.append(Text.translatable(enchantment.getTranslationKey()).formatted(Formatting.GRAY));
                 } else {
-                    line = line.append(Text.translatable("screen.researchtable.undiscovered_hint"));
+                    line = line.append(Text.translatable("screen.researchtable.undiscovered_hint").formatted(Formatting.GRAY));
                 }
                 lines.add(line);
             }
