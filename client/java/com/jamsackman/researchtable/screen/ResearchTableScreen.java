@@ -644,23 +644,16 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         drawY += 12;
 
         var mats = getResearchMaterialsFor(enchId.toString());
-        int mx = contentLeft;
-        int my = drawY;
-        int show = Math.min(mats.size(), 4);
-        for (int i = 0; i < show; i++) {
-            var me = mats.get(i);
-            int rowY = y + i * 18;
-            ctx.drawItem(me.stack, mx, rowY);
-            String p = "+" + me.points;
-            int tx = mx + 18 + 2;
-            int ty = rowY + 4;
+        if (!mats.isEmpty()) {
+            var mat = mats.get(0);
+            ctx.drawItem(mat.stack, contentLeft, drawY);
+            String p = "+" + mat.points;
+            int tx = contentLeft + 18 + 2;
+            int ty = drawY + 4;
             ctx.drawText(this.textRenderer, Text.literal(p), tx, ty, COL_TEXT, false);
+            layoutY += 20;
+            drawY += 20;
         }
-        layoutY += 18;
-        drawY += 18;
-
-        layoutY += 20;
-        drawY += 20;
 
         ctx.disableScissor();
 
