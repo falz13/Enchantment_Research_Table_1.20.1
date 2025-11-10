@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
 import java.io.BufferedReader;
@@ -33,6 +34,7 @@ public final class ResearchItems implements SimpleSynchronousResourceReloadListe
 
     private static final Gson GSON = new GsonBuilder().setLenient().create();
     private static final String FOLDER = "research_items";
+    private static final Identifier BOOK_ID = new Identifier("minecraft", "book");
 
     private ResearchItems() {}
 
@@ -52,6 +54,7 @@ public final class ResearchItems implements SimpleSynchronousResourceReloadListe
 
         int files = 0;
         int added = 0;
+        int fallbackAdded = 0;
         int skipped = 0;
 
         // Find every *.json under any namespace's research_items folder
@@ -101,8 +104,41 @@ public final class ResearchItems implements SimpleSynchronousResourceReloadListe
             }
         }
 
-        ResearchTableMod.LOGGER.info("[ResearchTable] Loaded {} mappings from {} file(s), skipped {} entries.",
-                added, files, skipped);
+        // Track which enchantments have at least one recognised item
+        Set<String> enchantmentsWithRecognisedItems = new HashSet<>();
+        Set<String> enchantmentsEncountered = new HashSet<>();
+
+        MAP.forEach((itemId, enchMap) -> {
+            if (enchMap == null || enchMap.isEmpty()) return;
+            enchantmentsEncountered.addAll(enchMap.keySet());
+
+            Identifier parsed = Identifier.tryParse(itemId);
+            if (parsed != null && Registries.ITEM.containsId(parsed)) {
+                enchantmentsWithRecognisedItems.addAll(enchMap.keySet());
+            }
+        });
+
+        // Also consider every enchantment available in this version
+        for (Identifier enchId : Registries.ENCHANTMENT.getIds()) {
+            enchantmentsEncountered.add(enchId.toString());
+        }
+
+        // Provide a fallback research material (books) for enchantments without recognised items
+        if (!enchantmentsEncountered.isEmpty() && Registries.ITEM.containsId(BOOK_ID)) {
+            String bookKey = BOOK_ID.toString();
+            Map<String, Integer> bookMap = MAP.computeIfAbsent(bookKey, k -> new HashMap<>());
+
+            for (String enchId : enchantmentsEncountered) {
+                if (enchantmentsWithRecognisedItems.contains(enchId)) continue;
+                if (bookMap.putIfAbsent(enchId, 1) == null) {
+                    fallbackAdded++;
+                }
+            }
+        }
+
+        ResearchTableMod.LOGGER.info(
+                "[ResearchTable] Loaded {} mappings from {} file(s), skipped {} entries, added {} fallback(s).",
+                added, files, skipped, fallbackAdded);
     }
 
     private static String getString(JsonObject obj, String key) {
@@ -136,5 +172,11 @@ public final class ResearchItems implements SimpleSynchronousResourceReloadListe
         Map<String, Map<String, Integer>> outer = new HashMap<>();
         MAP.forEach((k, v) -> outer.put(k, Collections.unmodifiableMap(v)));
         return Collections.unmodifiableMap(outer);
+    }
+
+    /** Client-side: replace the current map with data received from the server. */
+    public static void applySync(Map<String, Map<String, Integer>> data) {
+        MAP.clear();
+        data.forEach((itemId, enchMap) -> MAP.put(itemId, new HashMap<>(enchMap)));
     }
 }
