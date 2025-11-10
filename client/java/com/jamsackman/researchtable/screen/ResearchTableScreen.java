@@ -607,13 +607,13 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         List<ItemStack> appl = getApplicableIcons(ench);
         final int cols = APPLICABLE_COLS;
-        int maxIcons = Math.min(appl.size(), cols * 2);
-        for (int i = 0; i < maxIcons; i++) {
+        int iconCount = appl.size();
+        for (int i = 0; i < iconCount; i++) {
             int col = i % cols;
             int row = i / cols;
             ctx.drawItem(appl.get(i), contentLeft + col * 18, y + row * 18);
         }
-        int applRows = (int) Math.ceil(maxIcons / (double) cols);
+        int applRows = iconCount == 0 ? 0 : (int) Math.ceil(iconCount / (double) cols);
         y += applRows * 18;
         y += 6;
 
