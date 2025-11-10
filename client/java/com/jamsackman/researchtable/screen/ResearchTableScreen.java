@@ -93,7 +93,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
     private static final int ROW_BG_HEADER     = 0xAAA8A811;
     private static final int ROW_BG_HOVER      = 0xBBAC8C90;
     private static final int ROW_BG_SELECTED   = 0xAAC678BD;
-    private static final int ROW_BG_LOCKED     = 0xAA9AA0A6;
+    private static final int ROW_BG_LOCKED     = 0xCC6A5066;
     private static final int ROW_BG_INCOMPAT   = 0xAA222233;
 
     // --- Tab hitboxes (relative to GUI origin) ---
