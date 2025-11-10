@@ -16,12 +16,18 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.registry.Registries;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class ResearchTableClient implements ClientModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger("ResearchTableClient");
@@ -72,7 +78,7 @@ public class ResearchTableClient implements ClientModInitializer {
                 Enchantment enchantment = enchantmentId != null ? Registries.ENCHANTMENT.get(enchantmentId) : null;
 
                 boolean discovered = enchantment != null && unlocked.contains(enchId);
-                Text line = Text.literal("Research: ");
+                MutableText line = Text.literal("Research: ");
                 if (discovered) {
                     line = line.append(Text.translatable(enchantment.getTranslationKey()));
                 } else {
