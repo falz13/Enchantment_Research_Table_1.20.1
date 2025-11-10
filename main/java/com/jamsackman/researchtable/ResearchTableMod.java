@@ -45,6 +45,8 @@ public class ResearchTableMod implements ModInitializer {
     public static final String MODID = "researchtable";
     public static final Logger LOGGER = LoggerFactory.getLogger("ResearchTable");
 
+    public static final int COLOR_UNLOCKED = 0xFFB6F2A2;
+
     public static final Identifier ADV_FIRST_POINTS = new Identifier(MODID, "progress/first_day_of_school");
     public static final Identifier ADV_5K_POINTS    = new Identifier(MODID, "progress/every_day_is_a_school_day");
     public static final Identifier ADV_20K_POINTS   = new Identifier(MODID, "progress/teachers_pet");
