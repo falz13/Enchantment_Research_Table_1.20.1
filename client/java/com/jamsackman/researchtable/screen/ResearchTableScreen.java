@@ -42,8 +42,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
     // --- Imbue side panel scrolling (same behavior as enchant info panel) ---
     private int imbuePanelScroll = 0;        // pixels scrolled
     private int imbueContentHeight = 0;      // total pixel height of rows
-    private static final int IMBUE_ROW_H_HDR = 12; // header rows
-    private static final int IMBUE_ROW_H_ENCH = 11; // enchant rows
+    private static final int IMBUE_ROW_H_HDR = 13; // header rows
+    private static final int IMBUE_ROW_H_ENCH = 10; // enchant rows
 
     // --- Research preview (tab 1) ---
     private static final int R_PREVIEW_PAD   = 6;
@@ -54,6 +54,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
     private static final int RESEARCH_LINE_H          = 12;
     private static final int RESEARCH_POINTS_PER_LEVEL= 100;
+    private static final int ENCHANTED_ITEM_POINT_CAP = 500;
 
     private int researchScroll = 0;
     private int researchContentHeight = 0;
@@ -92,6 +93,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
     private static final int ROW_BG_HEADER     = 0xAAA8A811;
     private static final int ROW_BG_HOVER      = 0xBBAC8C90;
     private static final int ROW_BG_SELECTED   = 0xAAC678BD;
+    private static final int ROW_BG_LOCKED     = 0xCC6A5066;
     private static final int ROW_BG_INCOMPAT   = 0xAA222233;
 
     // --- Tab hitboxes (relative to GUI origin) ---
@@ -393,8 +395,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (!isUnlocked) {
                 rows.add(new Row(idStr, ench, "???", null, COLOR_LOCKED));
             } else {
-                int usable = ResearchPersistentState.usableLevelFor(total);
-                int capped = Math.min(usable, ench.getMaxLevel());
+                int capped = ResearchPersistentState.usableLevelFor(total, ench.getMaxLevel());
                 String name = Text.translatable(ench.getTranslationKey()).getString();
                 if (capped == 0) {
                     String subtitle = "Level I Locked";
@@ -587,17 +588,17 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         renderY += 6;
 
         int totalPts = ResearchClientState.progress().getOrDefault(enchId.toString(), 0);
-        int usable = ResearchPersistentState.usableLevelFor(totalPts);
         int maxLevel = ench.getMaxLevel();
+        int unlockedLevel = ResearchPersistentState.usableLevelFor(totalPts, maxLevel);
 
-        if (usable >= maxLevel) {
+        if (unlockedLevel >= maxLevel) {
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_complete"),
                     contentLeft, renderY, COLOR_COMPLETE, false);
             y += 12;
             renderY += 12;
         } else {
-            int nextLevel = Math.min(usable + 1, maxLevel);
-            int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel);
+            int nextLevel = Math.min(unlockedLevel + 1, maxLevel);
+            int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel, maxLevel);
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.researching"),
                     contentLeft, renderY, 0xFFFFFFFF, false);
             y += 12;
@@ -647,10 +648,11 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         int show = Math.min(mats.size(), 4);
         for (int i = 0; i < show; i++) {
             var me = mats.get(i);
-            ctx.drawItem(me.stack, mx + i * 18, my);
+            int rowY = y + i * 18;
+            ctx.drawItem(me.stack, mx, rowY);
             String p = "+" + me.points;
-            int tx = mx + i * 18 + 18 + 2;
-            int ty = my + 4;
+            int tx = mx + 18 + 2;
+            int ty = rowY + 4;
             ctx.drawText(this.textRenderer, Text.literal(p), tx, ty, COL_TEXT, false);
         }
         y += 18;
@@ -665,7 +667,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         ctx.disableScissor();
 
-        panelContentHeight = y - contentTop;
+        panelContentHeight = y - contentTop + 18;
 
         int visibleH = contentBottom - contentTop;
         int maxScroll2 = Math.max(0, panelContentHeight - visibleH);
@@ -736,24 +738,26 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             }
 
             if (showNotDiscovered) {
-                rows.add(Text.translatable("screen.researchtable.not_discovered").getString());
+                rows.add(Text.translatable("screen.researchtable.undiscovered_hint").getString());
             } else if (rows.isEmpty()) {
                 // b) enchanted items/books (discovery path)
                 Map<Enchantment, Integer> ench = EnchantmentHelper.get(stack);
                 if (!ench.isEmpty()) {
+                    int count = stack.getCount();
                     for (var e : ench.entrySet()) {
                         if (ResearchTableMod.isHiddenEnch(e.getKey())) continue;
                         Enchantment en = e.getKey();
                         int level = Math.max(1, e.getValue());
                         String name = Text.translatable(en.getTranslationKey()).getString();
-                        int points = level * RESEARCH_POINTS_PER_LEVEL;
+                        int base = level * RESEARCH_POINTS_PER_LEVEL * count;
+                        int points = Math.min(ENCHANTED_ITEM_POINT_CAP, base);
                         rows.add(name + " +" + points);
                     }
                 }
             }
         }
 
-        researchContentHeight = rows.size() * RESEARCH_LINE_H;
+        researchContentHeight = rows.size() * RESEARCH_LINE_H + RESEARCH_LINE_H;
 
         int maxScroll = Math.max(0, researchContentHeight - ch);
         if (researchScroll < 0) researchScroll = 0;
@@ -800,7 +804,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         int totalH = 0;
         for (ImbueRow r : imbueRows) {
-            totalH += (r.ench == null) ? 13 : 10;
+            totalH += (r.ench == null) ? IMBUE_ROW_H_HDR : IMBUE_ROW_H_ENCH;
         }
         imbueContentHeight = totalH;
 
@@ -815,14 +819,16 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         ctx.enableScissor(listLeft, listTop, listRight, listBottom);
         for (int i = 0; i < imbueRows.size(); i++) {
             ImbueRow r = imbueRows.get(i);
-            int rowH = (r.ench == null) ? 13 : 10;
+            int rowH = (r.ench == null) ? IMBUE_ROW_H_HDR : IMBUE_ROW_H_ENCH;
+            int drawTop = y - 1;
+            int drawBottom = y + rowH - 1;
 
-            r.yTop = y;
-            r.yBottom = y + rowH - 1;
+            r.yTop = drawTop;
+            r.yBottom = drawBottom;
 
-            if (r.yBottom >= listTop && r.yTop <= listBottom) {
+            if (drawBottom >= listTop && drawTop <= listBottom) {
                 if (r.ench == null) {
-                    int underlineY = y - 1;
+                    int underlineY = drawTop;
                     ctx.fill(listLeft, y, listRight, y + rowH - 2, ROW_BG_HEADER);
                     ctx.fill(listLeft, underlineY, listRight, underlineY + 1, ROW_BG_INCOMPAT);
                     ctx.drawText(this.textRenderer, Text.literal(r.label), listLeft + 1, y + 2, 0xFFD4D8DD, true);
@@ -831,18 +837,18 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                 }
 
                 boolean withinX = mouseX >= listLeft && mouseX <= listRight;
-                boolean withinY = mouseY >= r.yTop - 1 && mouseY < r.yBottom;
+                boolean withinY = mouseY >= drawTop && mouseY <= drawBottom;
 
                 boolean isSelected = imbueSelected.containsKey(r.ench);
                 int textcol_if_incompat = (r.incompatible) ? COL_LOCKED : COL_TEXT;
 
-                ctx.fill(listLeft, y - 1, listRight, y + rowH - 1, ROW_BG_BASE);
+                ctx.fill(listLeft, drawTop, listRight, drawBottom, ROW_BG_BASE);
                 if (isSelected) {
-                    ctx.fill(listLeft, y - 1, listRight, y + rowH - 1, ROW_BG_SELECTED);
+                    ctx.fill(listLeft, drawTop, listRight, drawBottom, ROW_BG_SELECTED);
                 } else if (r.incompatible) {
-                    ctx.fill(listLeft, y - 1, listRight, y + rowH - 1, ROW_BG_INCOMPAT);
-                } else if (r.section != Section.CURRENT && r.section != Section.LOCKED && withinX && withinY) {
-                    ctx.fill(listLeft, y - 1, listRight, y + rowH - 1, ROW_BG_HOVER);
+                    ctx.fill(listLeft, drawTop, listRight, drawBottom, ROW_BG_LOCKED);
+                } else if (r.section != Section.CURRENT && r.section != Section.LOCKED && withinX && withinY && !r.incompatible) {
+                    ctx.fill(listLeft, drawTop, listRight, drawBottom, ROW_BG_HOVER);
                     imbueHoverIndex = i;
                 }
 
@@ -877,8 +883,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             Identifier id = Registries.ENCHANTMENT.getId(en);
             if (id == null) return 0;
             int total = prog.getOrDefault(id.toString(), 0);
-            int usable = ResearchPersistentState.usableLevelFor(total);
-            return Math.min(usable, en.getMaxLevel());
+            return ResearchPersistentState.usableLevelFor(total, en.getMaxLevel());
         };
 
         List<Enchantment> applicable = new ArrayList<>();
@@ -1079,11 +1084,19 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         double term1 = Math.pow(enchitemlevels, 1.45);
         double term2 = Math.pow(10.0 * enchlevelincrease, 0.8);
-        levelcost = (int)Math.ceil(term1 + term2);
+        double baseLevelCost = Math.ceil(term1 + term2);
 
         double l1 = Math.pow(enchitemlevels, 1.5);
         double l2 = Math.pow(enchlevelincrease, 1.5);
-        lapiscost = Math.min(64, (int)Math.ceil(l1 + l2));
+        double baseLapisCost = Math.ceil(l1 + l2);
+
+        float discountPercent = handler.getShelfDiscountPercent();
+        float discount = Math.max(0.0f, Math.min(0.25f, discountPercent / 100.0f));
+        double factor = 1.0 - discount;
+
+        levelcost = (int)Math.max(0, Math.ceil(baseLevelCost * factor));
+        lapiscost = (int)Math.max(0, Math.ceil(baseLapisCost * factor));
+        if (lapiscost > 64) lapiscost = 64;
     }
 
     // ---------- Slot XY shifter via accessor ----------
@@ -1271,10 +1284,10 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                     for (int i = 0; i < imbueRows.size(); i++) {
                         ImbueRow r = imbueRows.get(i);
                         int rowH = (r.ench == null) ? IMBUE_ROW_H_HDR : IMBUE_ROW_H_ENCH;
-                        int top = y;
-                        int bottom = y + rowH - 1;
+                        int drawTop = y - 1;
+                        int drawBottom = y + rowH - 1;
 
-                        if (mouseY >= top && mouseY < bottom) {
+                        if (mouseY >= drawTop && mouseY <= drawBottom) {
                             hitIndex = i;
                             break;
                         }
