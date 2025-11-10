@@ -500,6 +500,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             return;
         }
 
+        int renderY = y - panelScroll;
+
         var unlockedSet = ResearchClientState.unlocked();
         if (!unlockedSet.contains(selectedEnchId)) {
             final int padX = 6;
@@ -510,7 +512,6 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             final int contentWidth  = contentRight - contentLeft;
 
             int y = contentTop;
-            int renderY = y - panelScroll;
 
             ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
             ctx.drawText(this.textRenderer, Text.literal("???"), contentLeft, renderY, 0xFF9AA0A6, false);
