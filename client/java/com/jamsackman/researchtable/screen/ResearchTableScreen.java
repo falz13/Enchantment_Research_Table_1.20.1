@@ -467,7 +467,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             final int contentBottom = panelY + panelH - 6;
             final int contentWidth  = contentRight - contentLeft;
 
-            int y = contentTop - panelScroll;
+            int y = contentTop;
+            int renderY = y - panelScroll;
 
             List<String> hintLines = wrapPlain(
                     Text.translatable("screen.researchtable.enchant_info_hint").getString(),
@@ -476,8 +477,9 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
             ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
             for (String line : hintLines) {
-                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, y, COL_TEXT, false);
+                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, renderY, COL_TEXT, false);
                 y += 10;
+                renderY += 10;
             }
             ctx.disableScissor();
 
@@ -507,19 +509,22 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             final int contentBottom = panelY + panelH - 6;
             final int contentWidth  = contentRight - contentLeft;
 
-            int y = contentTop - panelScroll;
+            int y = contentTop;
+            int renderY = y - panelScroll;
 
             ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
-            ctx.drawText(this.textRenderer, Text.literal("???"), contentLeft, y, 0xFF9AA0A6, false);
+            ctx.drawText(this.textRenderer, Text.literal("???"), contentLeft, renderY, 0xFF9AA0A6, false);
             y += 12;
+            renderY += 12;
 
             List<String> hintLines = wrapPlain(
                     Text.translatable("screen.researchtable.undiscovered_hint").getString(),
                     contentWidth
             );
             for (String line : hintLines) {
-                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, y, 0xFFB0B6BB, false);
+                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, renderY, 0xFFB0B6BB, false);
                 y += 10;
+                renderY += 10;
             }
             ctx.disableScissor();
 
@@ -559,13 +564,15 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         final int contentBottom = panelY + panelH - 6;
         final int contentWidth  = contentRight - contentLeft;
 
-        int y = contentTop - panelScroll;
+        int y = contentTop;
+        int renderY = y - panelScroll;
 
         ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
 
         String baseName = Text.translatable(ench.getTranslationKey()).getString();
-        drawScrollingText(ctx, baseName, contentLeft, y, contentWidth, 0xFFFFFFFF);
+        drawScrollingText(ctx, baseName, contentLeft, renderY, contentWidth, 0xFFFFFFFF);
         y += 12;
+        renderY += 12;
 
         Identifier enchId = Registries.ENCHANTMENT.getId(ench);
         String desc = ClientEnchantDescriptions.get(enchId.toString());
@@ -573,10 +580,12 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         List<String> lines = wrapPlain(desc, contentWidth);
         for (String l : lines) {
-            ctx.drawText(this.textRenderer, Text.literal(l), contentLeft, y, 0xFFCFCFCF, false);
+            ctx.drawText(this.textRenderer, Text.literal(l), contentLeft, renderY, 0xFFCFCFCF, false);
             y += 10;
+            renderY += 10;
         }
         y += 6;
+        renderY += 6;
 
         int totalPts = ResearchClientState.progress().getOrDefault(enchId.toString(), 0);
         int maxLevel = ench.getMaxLevel();
@@ -584,46 +593,59 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         if (unlockedLevel >= maxLevel) {
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_complete"),
-                    contentLeft, y, COLOR_COMPLETE, false);
+                    contentLeft, renderY, COLOR_COMPLETE, false);
             y += 12;
+            renderY += 12;
         } else {
             int nextLevel = Math.min(unlockedLevel + 1, maxLevel);
             int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel, maxLevel);
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.researching"),
-                    contentLeft, y, 0xFFFFFFFF, false);
+                    contentLeft, renderY, 0xFFFFFFFF, false);
             y += 12;
+            renderY += 12;
             ctx.drawText(this.textRenderer, Text.literal("Level " + toRoman(nextLevel)),
-                    contentLeft, y, COL_TEXT, false);
+                    contentLeft, renderY, COL_TEXT, false);
             y += 12;
+            renderY += 12;
             ctx.drawText(this.textRenderer, Text.literal(totalPts + " / " + nextNeeded),
-                    contentLeft, y, COL_TEXT, false);
+                    contentLeft, renderY, COL_TEXT, false);
             y += 12;
+            renderY += 12;
         }
 
         ctx.drawText(this.textRenderer,
                 Text.translatable("screen.researchtable.max_level", toRoman(maxLevel)),
-                contentLeft, y, COLOR_COMPLETE, false);
+                contentLeft, renderY, COLOR_COMPLETE, false);
         y += 12;
+        renderY += 12;
 
         List<ItemStack> appl = getApplicableIcons(ench);
         final int cols = APPLICABLE_COLS;
         int iconCount = appl.size();
+        int iconRenderY = renderY;
         for (int i = 0; i < iconCount; i++) {
             int col = i % cols;
             int row = i / cols;
-            ctx.drawItem(appl.get(i), contentLeft + col * 18, y + row * 18);
+            ctx.drawItem(appl.get(i), contentLeft + col * 18, iconRenderY + row * 18);
         }
         int applRows = iconCount == 0 ? 0 : (int) Math.ceil(iconCount / (double) cols);
-        y += applRows * 18;
+        if (applRows > 0) {
+            int iconHeight = applRows * 18;
+            y += iconHeight;
+            renderY += iconHeight;
+        }
+        renderY += 6;
         y += 6;
 
         ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_items"),
-                contentLeft, y, COL_TEXT, false);
+                contentLeft, renderY, COL_TEXT, false);
         y += 12;
+        renderY += 12;
 
         var mats = getResearchMaterialsFor(enchId.toString());
         int mx = contentLeft;
-        int show = mats.size();
+        int my = renderY;
+        int show = Math.min(mats.size(), 4);
         for (int i = 0; i < show; i++) {
             var me = mats.get(i);
             int rowY = y + i * 18;
@@ -633,12 +655,15 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             int ty = rowY + 4;
             ctx.drawText(this.textRenderer, Text.literal(p), tx, ty, COL_TEXT, false);
         }
-        y += Math.max(1, show) * 18;
+        y += 18;
+        renderY += 18;
 
-        ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, y, 0x00000000, false);
+        ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, renderY, 0x00000000, false);
         y += 10;
-        ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, y, 0x00000000, false);
+        renderY += 10;
+        ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, renderY, 0x00000000, false);
         y += 10;
+        renderY += 10;
 
         ctx.disableScissor();
 
