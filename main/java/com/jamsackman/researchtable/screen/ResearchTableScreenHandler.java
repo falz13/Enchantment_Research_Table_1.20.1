@@ -683,7 +683,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 .toList();
 
         if (discovered.isEmpty()) {
-            player.sendMessage(Text.translatable("screen.researchtable.not_discovered"), true);
+            player.sendMessage(Text.translatable("screen.researchtable.undiscovered_hint"), true);
             return;
         }
 

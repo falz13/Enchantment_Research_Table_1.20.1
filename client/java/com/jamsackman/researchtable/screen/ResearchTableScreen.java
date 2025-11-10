@@ -713,7 +713,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             }
 
             if (showNotDiscovered) {
-                rows.add(Text.translatable("screen.researchtable.not_discovered").getString());
+                rows.add(Text.translatable("screen.researchtable.undiscovered_hint").getString());
             } else if (rows.isEmpty()) {
                 // b) enchanted items/books (discovery path)
                 Map<Enchantment, Integer> ench = EnchantmentHelper.get(stack);
