@@ -512,6 +512,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             final int contentWidth  = contentRight - contentLeft;
 
             int y = contentTop;
+            int renderY = y - panelScroll;
 
             ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
             ctx.drawText(this.textRenderer, Text.literal("???"), contentLeft, renderY, 0xFF9AA0A6, false);
@@ -565,14 +566,15 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         final int contentBottom = panelY + panelH - 6;
         final int contentWidth  = contentRight - contentLeft;
 
-        int y = contentTop;
+        int layoutY = contentTop;
+        int drawY = layoutY - panelScroll;
 
         ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
 
         String baseName = Text.translatable(ench.getTranslationKey()).getString();
-        drawScrollingText(ctx, baseName, contentLeft, y - panelScroll, contentWidth, 0xFFFFFFFF);
-        y += 12;
-        renderY += 12;
+        drawScrollingText(ctx, baseName, contentLeft, drawY, contentWidth, 0xFFFFFFFF);
+        layoutY += 12;
+        drawY += 12;
 
         Identifier enchId = Registries.ENCHANTMENT.getId(ench);
         String desc = ClientEnchantDescriptions.get(enchId.toString());
@@ -580,12 +582,12 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         List<String> lines = wrapPlain(desc, contentWidth);
         for (String l : lines) {
-            ctx.drawText(this.textRenderer, Text.literal(l), contentLeft, y - panelScroll, 0xFFCFCFCF, false);
-            y += 10;
-            renderY += 10;
+            ctx.drawText(this.textRenderer, Text.literal(l), contentLeft, drawY, 0xFFCFCFCF, false);
+            layoutY += 10;
+            drawY += 10;
         }
-        y += 6;
-        renderY += 6;
+        layoutY += 6;
+        drawY += 6;
 
         int totalPts = ResearchClientState.progress().getOrDefault(enchId.toString(), 0);
         int maxLevel = ench.getMaxLevel();
@@ -593,56 +595,57 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         if (unlockedLevel >= maxLevel) {
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_complete"),
-                    contentLeft, y - panelScroll, COLOR_COMPLETE, false);
-            y += 12;
-            renderY += 12;
+                    contentLeft, drawY, COLOR_COMPLETE, false);
+            layoutY += 12;
+            drawY += 12;
         } else {
             int nextLevel = Math.min(unlockedLevel + 1, maxLevel);
             int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel, maxLevel);
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.researching"),
-                    contentLeft, y - panelScroll, 0xFFFFFFFF, false);
-            y += 12;
-            renderY += 12;
+                    contentLeft, drawY, 0xFFFFFFFF, false);
+            layoutY += 12;
+            drawY += 12;
             ctx.drawText(this.textRenderer, Text.literal("Level " + toRoman(nextLevel)),
-                    contentLeft, y - panelScroll, COL_TEXT, false);
-            y += 12;
-            renderY += 12;
+                    contentLeft, drawY, COL_TEXT, false);
+            layoutY += 12;
+            drawY += 12;
             ctx.drawText(this.textRenderer, Text.literal(totalPts + " / " + nextNeeded),
-                    contentLeft, y - panelScroll, COL_TEXT, false);
-            y += 12;
-            renderY += 12;
+                    contentLeft, drawY, COL_TEXT, false);
+            layoutY += 12;
+            drawY += 12;
         }
 
         ctx.drawText(this.textRenderer,
                 Text.translatable("screen.researchtable.max_level", toRoman(maxLevel)),
-                contentLeft, y - panelScroll, COLOR_COMPLETE, false);
-        y += 12;
-        renderY += 12;
+                contentLeft, drawY, COLOR_COMPLETE, false);
+        layoutY += 12;
+        drawY += 12;
 
         List<ItemStack> appl = getApplicableIcons(ench);
         final int cols = APPLICABLE_COLS;
         int iconCount = appl.size();
-        int iconRenderY = y - panelScroll;
         for (int i = 0; i < iconCount; i++) {
             int col = i % cols;
             int row = i / cols;
-            ctx.drawItem(appl.get(i), contentLeft + col * 18, iconRenderY + row * 18);
+            ctx.drawItem(appl.get(i), contentLeft + col * 18, drawY + row * 18);
         }
         int applRows = iconCount == 0 ? 0 : (int) Math.ceil(iconCount / (double) cols);
         if (applRows > 0) {
             int iconHeight = applRows * 18;
-            y += iconHeight;
+            layoutY += iconHeight;
+            drawY += iconHeight;
         }
-        y += 6;
+        layoutY += 6;
+        drawY += 6;
 
         ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_items"),
-                contentLeft, y - panelScroll, COL_TEXT, false);
-        y += 12;
-        renderY += 12;
+                contentLeft, drawY, COL_TEXT, false);
+        layoutY += 12;
+        drawY += 12;
 
         var mats = getResearchMaterialsFor(enchId.toString());
         int mx = contentLeft;
-        int my = y - panelScroll;
+        int my = drawY;
         int show = Math.min(mats.size(), 4);
         for (int i = 0; i < show; i++) {
             var me = mats.get(i);
@@ -653,14 +656,15 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             int ty = rowY + 4;
             ctx.drawText(this.textRenderer, Text.literal(p), tx, ty, COL_TEXT, false);
         }
-        y += 18;
-        renderY += 18;
+        layoutY += 18;
+        drawY += 18;
 
-        y += 20;
+        layoutY += 20;
+        drawY += 20;
 
         ctx.disableScissor();
 
-        panelContentHeight = y - contentTop + 18;
+        panelContentHeight = layoutY - contentTop;
 
         int visibleH = contentBottom - contentTop;
         int maxScroll2 = Math.max(0, panelContentHeight - visibleH);
