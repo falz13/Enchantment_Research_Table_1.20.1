@@ -625,19 +625,24 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
                 player.sendMessage(Text.literal("Researched ").append(ench.getName(Math.max(1, level))), false);
 
-                int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(Math.min(afterUsable + 1, ench.getMaxLevel()), ench.getMaxLevel());
-                int capThreshold  = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(ench.getMaxLevel(), ench.getMaxLevel());
-                nextThreshold = Math.min(nextThreshold, capThreshold);
+                Text progressMessage;
+                int maxLevel = ench.getMaxLevel();
+                if (afterUsable >= maxLevel) {
+                    progressMessage = Text.literal("Total: " + afterTotal + " - Max level researched!");
+                } else {
+                    int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
+                            .pointsForLevel(Math.min(afterUsable + 1, maxLevel));
+                    int capThreshold  = com.jamsackman.researchtable.state.ResearchPersistentState
+                            .pointsForLevel(maxLevel);
+                    nextThreshold = Math.min(nextThreshold, capThreshold);
 
-                player.sendMessage(
-                        Text.literal(
-                                "Total: " + afterTotal + " / " + nextThreshold +
-                                        " to unlock Level " + toRoman(Math.min(afterUsable + 1, ench.getMaxLevel()))
-                        ),
-                        false
-                );
+                    progressMessage = Text.literal(
+                            "Total: " + afterTotal + " / " + nextThreshold +
+                                    " to unlock Level " + toRoman(Math.min(afterUsable + 1, maxLevel))
+                    );
+                }
+
+                player.sendMessage(progressMessage, false);
 
                 var world = player.getWorld();
                 if (afterUsable > beforeUsable) {
@@ -721,19 +726,22 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             String niceName = (target != null) ? target.getName(1).getString() : targetEnchId;
             player.sendMessage(Text.literal("Researched " + niceName + " +" + gained), false);
 
-            int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                    .pointsForLevel(Math.min(afterUsable + 1, maxLevel), maxLevel);
-            if (target != null) {
-                int cap = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(maxLevel, maxLevel);
-                nextThreshold = Math.min(nextThreshold, cap);
+            Text progressMessage;
+            if (target != null && afterUsable >= target.getMaxLevel()) {
+                progressMessage = Text.literal("Total: " + afterTotal + " - Max level researched!");
+            } else {
+                int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .pointsForLevel(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1));
+                if (target != null) {
+                    int cap = com.jamsackman.researchtable.state.ResearchPersistentState.pointsForLevel(target.getMaxLevel());
+                    nextThreshold = Math.min(nextThreshold, cap);
+                }
+
+                progressMessage = Text.literal("Total: " + afterTotal + " / " + nextThreshold +
+                        " to unlock Level " + toRoman(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1)) );
             }
 
-            player.sendMessage(
-                    Text.literal("Total: " + afterTotal + " / " + nextThreshold +
-                            " to unlock Level " + toRoman(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1)) ),
-                    false
-            );
+            player.sendMessage(progressMessage, false);
 
             var world = player.getWorld();
             if (afterUsable > beforeUsable) {
