@@ -80,7 +80,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
     private static final int COL_HEADER_TEXT   = 0xFF2B2F33;
     private static final int COL_TEXT          = 0xFFE0E0E0;
     private static final int COLOR_LOCKED      = 0xFF9AA0A6;
-    private static final int COLOR_UNLOCKED    = 0xFFB6F2A2;
+    private static final int COLOR_UNLOCKED    = ResearchTableMod.COLOR_UNLOCKED;
     private static final int COLOR_COMPLETE    = 0xFF47E5D2;
     private static final int COLOR_HOVER       = 0x669B8C6E;
 
@@ -466,7 +466,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             final int contentBottom = panelY + panelH - 6;
             final int contentWidth  = contentRight - contentLeft;
 
-            int y = contentTop - panelScroll;
+            int y = contentTop;
+            int renderY = y - panelScroll;
 
             List<String> hintLines = wrapPlain(
                     Text.translatable("screen.researchtable.enchant_info_hint").getString(),
@@ -475,8 +476,9 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
             ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
             for (String line : hintLines) {
-                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, y, COL_TEXT, false);
+                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, renderY, COL_TEXT, false);
                 y += 10;
+                renderY += 10;
             }
             ctx.disableScissor();
 
@@ -506,19 +508,22 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             final int contentBottom = panelY + panelH - 6;
             final int contentWidth  = contentRight - contentLeft;
 
-            int y = contentTop - panelScroll;
+            int y = contentTop;
+            int renderY = y - panelScroll;
 
             ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
-            ctx.drawText(this.textRenderer, Text.literal("???"), contentLeft, y, 0xFF9AA0A6, false);
+            ctx.drawText(this.textRenderer, Text.literal("???"), contentLeft, renderY, 0xFF9AA0A6, false);
             y += 12;
+            renderY += 12;
 
             List<String> hintLines = wrapPlain(
                     Text.translatable("screen.researchtable.undiscovered_hint").getString(),
                     contentWidth
             );
             for (String line : hintLines) {
-                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, y, 0xFFB0B6BB, false);
+                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, renderY, 0xFFB0B6BB, false);
                 y += 10;
+                renderY += 10;
             }
             ctx.disableScissor();
 
@@ -558,13 +563,15 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         final int contentBottom = panelY + panelH - 6;
         final int contentWidth  = contentRight - contentLeft;
 
-        int y = contentTop - panelScroll;
+        int layoutY = contentTop;
+        int drawY = layoutY - panelScroll;
 
         ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
 
         String baseName = Text.translatable(ench.getTranslationKey()).getString();
-        drawScrollingText(ctx, baseName, contentLeft, y, contentWidth, 0xFFFFFFFF);
-        y += 12;
+        drawScrollingText(ctx, baseName, contentLeft, drawY, contentWidth, 0xFFFFFFFF);
+        layoutY += 12;
+        drawY += 12;
 
         Identifier enchId = Registries.ENCHANTMENT.getId(ench);
         String desc = ClientEnchantDescriptions.get(enchId.toString());
@@ -572,10 +579,12 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         List<String> lines = wrapPlain(desc, contentWidth);
         for (String l : lines) {
-            ctx.drawText(this.textRenderer, Text.literal(l), contentLeft, y, 0xFFCFCFCF, false);
-            y += 10;
+            ctx.drawText(this.textRenderer, Text.literal(l), contentLeft, drawY, 0xFFCFCFCF, false);
+            layoutY += 10;
+            drawY += 10;
         }
-        y += 6;
+        layoutY += 6;
+        drawY += 6;
 
         int totalPts = ResearchClientState.progress().getOrDefault(enchId.toString(), 0);
         int usable = ResearchPersistentState.usableLevelFor(totalPts);
@@ -583,65 +592,69 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         if (usable >= maxLevel) {
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_complete"),
-                    contentLeft, y, COLOR_COMPLETE, false);
-            y += 12;
+                    contentLeft, drawY, COLOR_COMPLETE, false);
+            layoutY += 12;
+            drawY += 12;
         } else {
             int nextLevel = Math.min(usable + 1, maxLevel);
             int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel);
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.researching"),
-                    contentLeft, y, 0xFFFFFFFF, false);
-            y += 12;
+                    contentLeft, drawY, 0xFFFFFFFF, false);
+            layoutY += 12;
+            drawY += 12;
             ctx.drawText(this.textRenderer, Text.literal("Level " + toRoman(nextLevel)),
-                    contentLeft, y, COL_TEXT, false);
-            y += 12;
+                    contentLeft, drawY, COL_TEXT, false);
+            layoutY += 12;
+            drawY += 12;
             ctx.drawText(this.textRenderer, Text.literal(totalPts + " / " + nextNeeded),
-                    contentLeft, y, COL_TEXT, false);
-            y += 12;
+                    contentLeft, drawY, COL_TEXT, false);
+            layoutY += 12;
+            drawY += 12;
         }
 
         ctx.drawText(this.textRenderer,
                 Text.translatable("screen.researchtable.max_level", toRoman(maxLevel)),
-                contentLeft, y, COLOR_COMPLETE, false);
-        y += 12;
+                contentLeft, drawY, COLOR_COMPLETE, false);
+        layoutY += 12;
+        drawY += 12;
 
         List<ItemStack> appl = getApplicableIcons(ench);
         final int cols = APPLICABLE_COLS;
-        int maxIcons = Math.min(appl.size(), cols * 2);
-        for (int i = 0; i < maxIcons; i++) {
+        int iconCount = appl.size();
+        for (int i = 0; i < iconCount; i++) {
             int col = i % cols;
             int row = i / cols;
-            ctx.drawItem(appl.get(i), contentLeft + col * 18, y + row * 18);
+            ctx.drawItem(appl.get(i), contentLeft + col * 18, drawY + row * 18);
         }
-        int applRows = (int) Math.ceil(maxIcons / (double) cols);
-        y += applRows * 18;
-        y += 6;
+        int applRows = iconCount == 0 ? 0 : (int) Math.ceil(iconCount / (double) cols);
+        if (applRows > 0) {
+            int iconHeight = applRows * 18;
+            layoutY += iconHeight;
+            drawY += iconHeight;
+        }
+        layoutY += 6;
+        drawY += 6;
 
         ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_items"),
-                contentLeft, y, COL_TEXT, false);
-        y += 12;
+                contentLeft, drawY, COL_TEXT, false);
+        layoutY += 12;
+        drawY += 12;
 
         var mats = getResearchMaterialsFor(enchId.toString());
-        int mx = contentLeft;
-        int my = y;
-        int show = Math.min(mats.size(), 4);
-        for (int i = 0; i < show; i++) {
-            var me = mats.get(i);
-            ctx.drawItem(me.stack, mx + i * 18, my);
-            String p = "+" + me.points;
-            int tx = mx + i * 18 + 18 + 2;
-            int ty = my + 4;
+        if (!mats.isEmpty()) {
+            var mat = mats.get(0);
+            ctx.drawItem(mat.stack, contentLeft, drawY);
+            String p = "+" + mat.points;
+            int tx = contentLeft + 18 + 2;
+            int ty = drawY + 4;
             ctx.drawText(this.textRenderer, Text.literal(p), tx, ty, COL_TEXT, false);
+            layoutY += 20;
+            drawY += 20;
         }
-        y += 18;
-
-        ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, y, 0x00000000, false);
-        y += 10;
-        ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, y, 0x00000000, false);
-        y += 10;
 
         ctx.disableScissor();
 
-        panelContentHeight = y - contentTop;
+        panelContentHeight = layoutY - contentTop;
 
         int visibleH = contentBottom - contentTop;
         int maxScroll2 = Math.max(0, panelContentHeight - visibleH);
@@ -810,7 +823,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                 boolean withinY = mouseY >= r.yTop - 1 && mouseY < r.yBottom;
 
                 boolean isSelected = imbueSelected.containsKey(r.ench);
-                int textcol_if_incompat = (r.incompatible) ? COLOR_LOCKED : COL_TEXT;
+                int textcol_if_incompat = (r.incompatible) ? COL_LOCKED : COL_TEXT;
 
                 ctx.fill(listLeft, y - 1, listRight, y + rowH - 1, ROW_BG_BASE);
                 if (isSelected) {
@@ -843,6 +856,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         imbueRows.clear();
 
         Map<Enchantment, Integer> current = EnchantmentHelper.get(stack);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
         enchitemlevels = current.values().stream().mapToInt(Integer::intValue).sum();
 
         var unlockedIds = ResearchClientState.unlocked(); // Set<String>
@@ -934,6 +948,13 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         }
 
         flagIncompatibles(current.keySet());
+
+        boolean removed = pruneInvalidSelections();
+        if (removed) {
+            flagIncompatibles(current.keySet());
+            sendImbueSelectionsToServer();
+        }
+
         computeCosts();
 
         for (ImbueRow r : imbueRows) {
@@ -952,6 +973,16 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         hdr.incompatible = false;
         hdr.selected = false;
         imbueRows.add(hdr);
+    }
+
+    private boolean pruneInvalidSelections() {
+        java.util.Set<Enchantment> valid = new java.util.HashSet<>();
+        for (ImbueRow r : imbueRows) {
+            if (r.ench != null && r.section == Section.UNLOCKED && !r.incompatible) {
+                valid.add(r.ench);
+            }
+        }
+        return imbueSelected.keySet().removeIf(en -> !valid.contains(en));
     }
 
     private void flagIncompatibles(Set<Enchantment> currentOnItem) {
@@ -979,28 +1010,35 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         }
     }
 
-    private static boolean areCompatible(net.minecraft.enchantment.Enchantment a,
-                                         net.minecraft.enchantment.Enchantment b) {
-        if (a == b) return true;
-        try {
-            var method = net.minecraft.enchantment.Enchantment.class
-                    .getDeclaredMethod("canAccept", net.minecraft.enchantment.Enchantment.class);
-            method.setAccessible(true);
+    private static boolean areCompatible(Enchantment a, Enchantment b) {
+        return accepts(a, b) && accepts(b, a);
+    }
 
-            boolean ab = (boolean) method.invoke(a, b);
-            boolean ba = (boolean) method.invoke(b, a);
-            return ab && ba;
-        } catch (NoSuchMethodException e) {
-            try {
-                var method = net.minecraft.enchantment.Enchantment.class
-                        .getDeclaredMethod("isCompatibleWith", net.minecraft.enchantment.Enchantment.class);
-                method.setAccessible(true);
-                boolean ab = (boolean) method.invoke(a, b);
-                boolean ba = (boolean) method.invoke(b, a);
-                return ab && ba;
-            } catch (Throwable inner) {
-                return true;
-            }
+    private static boolean accepts(Enchantment owner, Enchantment other) {
+        if (owner == null || other == null || owner == other) return true;
+        try {
+            return ((EnchantCompat) owner).researchtable$canAccept(other);
+        } catch (Throwable t) {
+            return true;
+        }
+    }
+
+    private boolean isSelectionAllowed(Enchantment ench, ItemStack stack) {
+        if (ench == null) return false;
+
+        Map<Enchantment, Integer> current = EnchantmentHelper.get(stack);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
+
+        for (Enchantment cur : current.keySet()) {
+            if (cur != ench && !areCompatible(ench, cur)) return false;
+        }
+
+        for (Enchantment other : imbueSelected.keySet()) {
+            if (other != ench && !areCompatible(ench, other)) return false;
+        }
+
+        try {
+            return ench.isAcceptableItem(stack);
         } catch (Throwable t) {
             return true;
         }
@@ -1239,12 +1277,20 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                             if (imbueSelected.containsKey(r.ench)) {
                                 imbueSelected.remove(r.ench);
                             } else {
+                                if (!isSelectionAllowed(r.ench, st)) {
+                                    return true;
+                                }
                                 int lvl = Math.max(1, r.displayLevel);
                                 imbueSelected.put(r.ench, lvl);
                             }
 
                             Map<Enchantment, Integer> cur = EnchantmentHelper.get(st);
+                            cur.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
                             flagIncompatibles(cur.keySet());
+                            boolean pruned = pruneInvalidSelections();
+                            if (pruned) {
+                                flagIncompatibles(cur.keySet());
+                            }
                             computeCosts();
 
                             sendImbueSelectionsToServer();

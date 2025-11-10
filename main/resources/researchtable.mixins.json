@@ -6,7 +6,8 @@
   "refmap": "researchtable.refmap.json",
   "mixins": [
     "AnvilScreenHandlerMixin",
-    "VillagerEntityMixin"
+    "VillagerEntityMixin",
+    "access.EnchantCompat"
   ],
   "client": [
     "SlotXYMixin"
