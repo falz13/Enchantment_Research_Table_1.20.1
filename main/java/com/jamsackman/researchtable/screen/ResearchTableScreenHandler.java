@@ -185,8 +185,9 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         return sb.toString();
     }
 
-    private static Text createUnlockedMessage(Text base) {
+    private static Text createUnlockedMessage(Text base, int level) {
         MutableText copy = base.copy();
+        copy.append(Text.literal(" Level " + toRoman(level)));
         return copy.append(Text.literal(" unlocked!")).styled(style -> style.withColor(ResearchTableMod.COLOR_UNLOCKED));
     }
 
@@ -642,7 +643,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 if (afterUsable > beforeUsable) {
                     Text baseName = Text.translatable(ench.getTranslationKey());
                     for (int lvl = beforeUsable + 1; lvl <= afterUsable; lvl++) {
-                        player.sendMessage(createUnlockedMessage(baseName), false);
+                        player.sendMessage(createUnlockedMessage(baseName, lvl), false);
                         world.playSound(
                                 null, player.getBlockPos(),
                                 net.minecraft.sound.SoundEvents.ENTITY_PLAYER_LEVELUP,
@@ -740,7 +741,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                         ? Text.translatable(target.getTranslationKey())
                         : Text.literal(niceName);
                 for (int lvl = beforeUsable + 1; lvl <= afterUsable; lvl++) {
-                    player.sendMessage(createUnlockedMessage(baseName), false);
+                    player.sendMessage(createUnlockedMessage(baseName, lvl), false);
                     world.playSound(
                             null, player.getBlockPos(),
                             net.minecraft.sound.SoundEvents.ENTITY_PLAYER_LEVELUP,
