@@ -500,8 +500,6 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             return;
         }
 
-        int renderY = y - panelScroll;
-
         var unlockedSet = ResearchClientState.unlocked();
         if (!unlockedSet.contains(selectedEnchId)) {
             final int padX = 6;
