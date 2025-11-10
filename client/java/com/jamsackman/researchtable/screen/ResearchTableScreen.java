@@ -565,12 +565,11 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         final int contentWidth  = contentRight - contentLeft;
 
         int y = contentTop;
-        int renderY = y - panelScroll;
 
         ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
 
         String baseName = Text.translatable(ench.getTranslationKey()).getString();
-        drawScrollingText(ctx, baseName, contentLeft, renderY, contentWidth, 0xFFFFFFFF);
+        drawScrollingText(ctx, baseName, contentLeft, y - panelScroll, contentWidth, 0xFFFFFFFF);
         y += 12;
         renderY += 12;
 
@@ -580,7 +579,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         List<String> lines = wrapPlain(desc, contentWidth);
         for (String l : lines) {
-            ctx.drawText(this.textRenderer, Text.literal(l), contentLeft, renderY, 0xFFCFCFCF, false);
+            ctx.drawText(this.textRenderer, Text.literal(l), contentLeft, y - panelScroll, 0xFFCFCFCF, false);
             y += 10;
             renderY += 10;
         }
@@ -593,36 +592,36 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         if (unlockedLevel >= maxLevel) {
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_complete"),
-                    contentLeft, renderY, COLOR_COMPLETE, false);
+                    contentLeft, y - panelScroll, COLOR_COMPLETE, false);
             y += 12;
             renderY += 12;
         } else {
             int nextLevel = Math.min(unlockedLevel + 1, maxLevel);
             int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel, maxLevel);
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.researching"),
-                    contentLeft, renderY, 0xFFFFFFFF, false);
+                    contentLeft, y - panelScroll, 0xFFFFFFFF, false);
             y += 12;
             renderY += 12;
             ctx.drawText(this.textRenderer, Text.literal("Level " + toRoman(nextLevel)),
-                    contentLeft, renderY, COL_TEXT, false);
+                    contentLeft, y - panelScroll, COL_TEXT, false);
             y += 12;
             renderY += 12;
             ctx.drawText(this.textRenderer, Text.literal(totalPts + " / " + nextNeeded),
-                    contentLeft, renderY, COL_TEXT, false);
+                    contentLeft, y - panelScroll, COL_TEXT, false);
             y += 12;
             renderY += 12;
         }
 
         ctx.drawText(this.textRenderer,
                 Text.translatable("screen.researchtable.max_level", toRoman(maxLevel)),
-                contentLeft, renderY, COLOR_COMPLETE, false);
+                contentLeft, y - panelScroll, COLOR_COMPLETE, false);
         y += 12;
         renderY += 12;
 
         List<ItemStack> appl = getApplicableIcons(ench);
         final int cols = APPLICABLE_COLS;
         int iconCount = appl.size();
-        int iconRenderY = renderY;
+        int iconRenderY = y - panelScroll;
         for (int i = 0; i < iconCount; i++) {
             int col = i % cols;
             int row = i / cols;
@@ -632,19 +631,17 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         if (applRows > 0) {
             int iconHeight = applRows * 18;
             y += iconHeight;
-            renderY += iconHeight;
         }
-        renderY += 6;
         y += 6;
 
         ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_items"),
-                contentLeft, renderY, COL_TEXT, false);
+                contentLeft, y - panelScroll, COL_TEXT, false);
         y += 12;
         renderY += 12;
 
         var mats = getResearchMaterialsFor(enchId.toString());
         int mx = contentLeft;
-        int my = renderY;
+        int my = y - panelScroll;
         int show = Math.min(mats.size(), 4);
         for (int i = 0; i < show; i++) {
             var me = mats.get(i);
@@ -658,12 +655,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         y += 18;
         renderY += 18;
 
-        ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, renderY, 0x00000000, false);
-        y += 10;
-        renderY += 10;
-        ctx.drawText(this.textRenderer, Text.literal(" "), contentLeft, renderY, 0x00000000, false);
-        y += 10;
-        renderY += 10;
+        y += 20;
 
         ctx.disableScissor();
 
