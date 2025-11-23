@@ -2,7 +2,6 @@ package com.jamsackman.researchtable;
 
 import com.jamsackman.researchtable.block.ModBlocks;
 import com.jamsackman.researchtable.config.ResearchTableConfig;
-import com.jamsackman.researchtable.data.ResearchItems;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.api.ModInitializer;
@@ -20,6 +19,7 @@ import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import java.util.UUID;
 import java.util.Map;
 import java.util.Set;
@@ -104,6 +104,13 @@ public class ResearchTableMod implements ModInitializer {
                     "rt_disableVillagerEnchantedTrades",
                     GameRules.Category.MOBS,
                     GameRuleFactory.createBooleanRule(true)
+            );
+
+    public static final GameRules.Key<GameRules.IntRule> GR_RESEARCH_LOSS_ON_DEATH =
+            GameRuleRegistry.register(
+                    "rt_researchLossOnDeath",
+                    GameRules.Category.PLAYER,
+                    GameRuleFactory.createIntRule(CONFIG.researchLossOnDeath.getPercent(), 0, 100)
             );
 
     @Override
@@ -237,14 +244,15 @@ public class ResearchTableMod implements ModInitializer {
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             if (alive) return; // only apply on death respawn
 
-            float loss = CONFIG.researchLossOnDeath.fraction();
-            if (loss <= 0f) return;
+            int percent = newPlayer.getWorld().getGameRules().getInt(GR_RESEARCH_LOSS_ON_DEATH);
+            percent = MathHelper.clamp((percent / 10) * 10, 0, 100); // enforce 10% steps
+            float loss = percent / 100f;
+            if (percent <= 0) return;
 
             ResearchPersistentState state = getResearchState(newPlayer.server);
             int removed = state.applyDeathLoss(newPlayer.getUuid(), loss);
             if (removed > 0) {
                 sendResearchSync(newPlayer);
-                int percent = (int) (loss * 100);
                 newPlayer.sendMessage(Text.literal("Research lost: " + removed + " (" + percent + "%)").formatted(Formatting.GRAY), false);
             }
         });
