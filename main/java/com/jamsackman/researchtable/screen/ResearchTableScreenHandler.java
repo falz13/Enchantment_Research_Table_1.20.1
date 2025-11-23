@@ -603,9 +603,9 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState
                         .usableLevelFor(beforeTotal, ench.getMaxLevel());
 
-                int base = Math.max(1, level) * 100 * stack.getCount();
-                int cappedBase = Math.min(500, base);
-                int gained = Math.max(1, Math.round(cappedBase * shelfMult)); // apply bookshelf bonus
+                int perLevel = Math.max(1, 100 / Math.max(1, ench.getMaxLevel()));
+                int base = Math.max(1, level) * perLevel * stack.getCount();
+                int gained = Math.max(1, Math.round(base * shelfMult)); // apply bookshelf bonus
                 state.addProgress(player.getUuid(), enchIdStr, gained);
 
                 if (gained > 0) {

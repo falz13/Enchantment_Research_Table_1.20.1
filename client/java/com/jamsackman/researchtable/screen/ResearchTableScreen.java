@@ -53,8 +53,6 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
     private static final int R_WIN_H         = 59;
 
     private static final int RESEARCH_LINE_H          = 12;
-    private static final int RESEARCH_POINTS_PER_LEVEL= 100;
-    private static final int ENCHANTED_ITEM_POINT_CAP = 500;
 
     private int researchScroll = 0;
     private int researchContentHeight = 0;
@@ -737,8 +735,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
                         Enchantment en = e.getKey();
                         int level = Math.max(1, e.getValue());
                         String name = Text.translatable(en.getTranslationKey()).getString();
-                        int base = level * RESEARCH_POINTS_PER_LEVEL * count;
-                        int points = Math.min(ENCHANTED_ITEM_POINT_CAP, base);
+                        int perLevel = Math.max(1, 100 / Math.max(1, en.getMaxLevel()));
+                        int points = level * perLevel * count;
                         rows.add(name + " +" + points);
                     }
                 }
