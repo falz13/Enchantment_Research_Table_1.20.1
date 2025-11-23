@@ -1,10 +1,11 @@
 package com.jamsackman.researchtable;
 
 import com.jamsackman.researchtable.block.ModBlocks;
-import com.jamsackman.researchtable.data.ResearchItems;
+import com.jamsackman.researchtable.config.ResearchTableConfig;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.minecraft.world.GameRules;
 import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
 import net.minecraft.loot.LootPool;
@@ -41,6 +42,8 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.Registries;
 import com.jamsackman.researchtable.enchant.ImbuedEnchantment;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 public class ResearchTableMod implements ModInitializer {
     public static final String MODID = "researchtable";
@@ -57,6 +60,8 @@ public class ResearchTableMod implements ModInitializer {
     public static final Identifier ADV_IMBUE_5      = new Identifier(MODID, "imbue/forging_on");
     public static final Identifier ADV_IMBUE_25     = new Identifier(MODID, "imbue/watch_out_bellows");
     public static final Identifier ADV_IMBUE_100    = new Identifier(MODID, "imbue/nailed_it");
+
+    public static ResearchTableConfig CONFIG = ResearchTableConfig.load();
 
     // Packets
     public static final Identifier CONSUME_INPUT_PACKET = new Identifier(MODID, "consume_input");
@@ -103,6 +108,7 @@ public class ResearchTableMod implements ModInitializer {
     @Override
     public void onInitialize() {
         LOGGER.info("[ResearchTable] Mod initializing");
+        CONFIG.save();
         ModBlocks.registerAll();
         com.jamsackman.researchtable.data.ResearchItems.init();
         com.jamsackman.researchtable.block.ModBlockEntities.registerAll();
@@ -226,6 +232,21 @@ public class ResearchTableMod implements ModInitializer {
         });
 
         IMBUED = Registry.register(Registries.ENCHANTMENT, IMBUED_ID, new ImbuedEnchantment());
+
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            if (alive) return; // only apply on death respawn
+
+            float loss = CONFIG.researchLossOnDeath.fraction();
+            if (loss <= 0f) return;
+
+            ResearchPersistentState state = getResearchState(newPlayer.server);
+            int removed = state.applyDeathLoss(newPlayer.getUuid(), loss);
+            if (removed > 0) {
+                sendResearchSync(newPlayer);
+                int percent = (int) (loss * 100);
+                newPlayer.sendMessage(Text.literal("Research lost: " + removed + " (" + percent + "%)").formatted(Formatting.GRAY), false);
+            }
+        });
 
         ServerPlayNetworking.registerGlobalReceiver(SET_IMBUE_SELECTIONS, (server, player, handler, buf, rs) -> {
             // payload: varint N, then N * (String enchantId, varint level)

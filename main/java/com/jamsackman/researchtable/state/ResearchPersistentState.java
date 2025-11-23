@@ -260,4 +260,34 @@ public class ResearchPersistentState extends PersistentState {
     public int getProgress(UUID uuid, String enchantmentId) {
         return getOrCreate(uuid).progress.getOrDefault(enchantmentId, 0);
     }
+
+    /**
+     * Apply a percentage loss to all tracked research progress for this player.
+     * @param uuid player id
+     * @param lossFraction amount to remove (e.g. 0.1 = 10%)
+     * @return total points removed across all enchantments
+     */
+    public int applyDeathLoss(UUID uuid, float lossFraction) {
+        if (lossFraction <= 0f) return 0;
+
+        PlayerData pd = getOrCreate(uuid);
+        int removed = 0;
+
+        for (Map.Entry<String, Integer> entry : pd.progress.entrySet()) {
+            int current = entry.getValue();
+            if (current <= 0) continue;
+            int delta = Math.round(current * lossFraction);
+            int next = Math.max(0, current - delta);
+            if (next != current) {
+                entry.setValue(next);
+                removed += current - next;
+            }
+        }
+
+        if (removed > 0) {
+            markDirty();
+        }
+
+        return removed;
+    }
 }

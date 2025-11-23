@@ -468,7 +468,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             final int contentWidth  = contentRight - contentLeft;
 
             int y = contentTop;
-            int renderY = y - panelScroll;
+            int hintY = y - panelScroll;
 
             List<String> hintLines = wrapPlain(
                     Text.translatable("screen.researchtable.enchant_info_hint").getString(),
@@ -477,9 +477,9 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
             ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
             for (String line : hintLines) {
-                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, renderY, COL_TEXT, false);
+                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, hintY, COL_TEXT, false);
                 y += 10;
-                renderY += 10;
+                hintY += 10;
             }
             ctx.disableScissor();
 
@@ -510,21 +510,21 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             final int contentWidth  = contentRight - contentLeft;
 
             int y = contentTop;
-            int renderY = y - panelScroll;
+            int undiscoveredY = y - panelScroll;
 
             ctx.enableScissor(contentLeft, contentTop, contentRight, contentBottom);
-            ctx.drawText(this.textRenderer, Text.literal("???"), contentLeft, renderY, 0xFF9AA0A6, false);
+            ctx.drawText(this.textRenderer, Text.literal("???"), contentLeft, undiscoveredY, 0xFF9AA0A6, false);
             y += 12;
-            renderY += 12;
+            undiscoveredY += 12;
 
             List<String> hintLines = wrapPlain(
                     Text.translatable("screen.researchtable.undiscovered_hint").getString(),
                     contentWidth
             );
             for (String line : hintLines) {
-                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, renderY, 0xFFB0B6BB, false);
+                ctx.drawText(this.textRenderer, Text.literal(line), contentLeft, undiscoveredY, 0xFFB0B6BB, false);
                 y += 10;
-                renderY += 10;
+                undiscoveredY += 10;
             }
             ctx.disableScissor();
 
