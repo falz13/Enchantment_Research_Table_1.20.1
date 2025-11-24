@@ -191,6 +191,9 @@ public class ResearchPersistentState extends PersistentState {
             20000   // V
     };
 
+    /** Minimum points to unlock level I for single-level enchantments (e.g. Mending). */
+    public static final int SINGLE_LEVEL_UNLOCK_THRESHOLD = 1500;
+
     // Optional: beyond max of BASE_THRESHOLDS, continue slightly exponential.
 // This matches your earlier curve, just scaled up.
     private static int tailThresholdForLevel(int levelIndex) {
