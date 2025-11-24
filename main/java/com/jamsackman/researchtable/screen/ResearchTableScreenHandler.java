@@ -728,10 +728,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                     ? com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal, target.getMaxLevel(), progressionMult)
                     : com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal, progressionMult);
 
-            Enchantment target = null;
-            Identifier tid = Identifier.tryParse(targetEnchId);
             if (tid != null) target = Registries.ENCHANTMENT.get(tid);
-            int maxLevel = (target != null) ? target.getMaxLevel() : Integer.MAX_VALUE;
             afterUsable = Math.min(afterUsable, maxLevel);
 
             String niceName = (target != null) ? target.getName(1).getString() : targetEnchId;
