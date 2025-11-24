@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.jamsackman.researchtable.ResearchTableMod;
 import com.jamsackman.researchtable.data.ResearchItems;
+import com.jamsackman.researchtable.mixin.access.EnchantCompat;
 
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -22,6 +23,7 @@ import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -178,33 +180,23 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         return sb.toString();
     }
 
-    /** True iff both enchantments mutually accept each other. */
-    private static boolean areCompatible(net.minecraft.enchantment.Enchantment a,
-                                         net.minecraft.enchantment.Enchantment b) {
-        if (a == b) return true;
-        try {
-            // Try to reflectively access the protected canAccept method
-            var method = net.minecraft.enchantment.Enchantment.class
-                    .getDeclaredMethod("canAccept", net.minecraft.enchantment.Enchantment.class);
-            method.setAccessible(true);
+    private static Text createUnlockedMessage(Text base, int level) {
+        MutableText copy = base.copy();
+        copy.append(Text.literal(" Level " + toRoman(level)));
+        return copy.append(Text.literal(" unlocked!")).styled(style -> style.withColor(ResearchTableMod.COLOR_UNLOCKED));
+    }
 
-            boolean ab = (boolean) method.invoke(a, b);
-            boolean ba = (boolean) method.invoke(b, a);
-            return ab && ba;
-        } catch (NoSuchMethodException e) {
-            // Older mappings: fallback to isCompatibleWith if available
-            try {
-                var method = net.minecraft.enchantment.Enchantment.class
-                        .getDeclaredMethod("isCompatibleWith", net.minecraft.enchantment.Enchantment.class);
-                method.setAccessible(true);
-                boolean ab = (boolean) method.invoke(a, b);
-                boolean ba = (boolean) method.invoke(b, a);
-                return ab && ba;
-            } catch (Throwable inner) {
-                return true; // safest fallback — allow everything
-            }
+    /** True iff both enchantments mutually accept each other. */
+    private static boolean areCompatible(Enchantment a, Enchantment b) {
+        return accepts(a, b) && accepts(b, a);
+    }
+
+    private static boolean accepts(Enchantment owner, Enchantment other) {
+        if (owner == null || other == null || owner == other) return true;
+        try {
+            return ((EnchantCompat) owner).researchtable$canAccept(other);
         } catch (Throwable t) {
-            return true; // don’t ever crash server/client
+            return true;
         }
     }
 
@@ -224,6 +216,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
         // Merge existing + selected enchants
         Map<Enchantment,Integer> current = EnchantmentHelper.get(out);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
         int currentLevels = current.values().stream().mapToInt(Integer::intValue).sum();
 
         Map<Enchantment,Integer> result = new HashMap<>(current);
@@ -322,6 +315,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         if (base.isEmpty()) return;
 
         Map<Enchantment,Integer> current = EnchantmentHelper.get(base);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
         Map<Enchantment,Integer> result = new HashMap<>(current);
 
         for (var e : serverSelections.entrySet()) {
@@ -401,10 +395,33 @@ public class ResearchTableScreenHandler extends ScreenHandler {
     public void serverSetImbueSelections(ServerPlayerEntity player,
                                          Map<Identifier, Integer> ids) {
         serverSelections.clear();
+
+        ItemStack base = this.getSlot(INPUT_SLOT).getStack();
+        Map<Enchantment, Integer> current = EnchantmentHelper.get(base);
+        current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
+
         ids.forEach((id, lvl) -> {
             if (ResearchTableMod.isHiddenId(id)) return;
-            Enchantment e = Registries.ENCHANTMENT.get(id);
-            if (e != null && lvl > 0) serverSelections.put(e, Math.min(lvl, e.getMaxLevel()));
+            Enchantment ench = Registries.ENCHANTMENT.get(id);
+            if (ench == null) return;
+
+            int clamped = Math.min(Math.max(1, lvl), ench.getMaxLevel());
+            if (clamped <= 0) return;
+
+            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
+            if (!ok) return;
+
+            ok = serverSelections.keySet().stream()
+                    .filter(other -> other != ench)
+                    .allMatch(other -> areCompatible(ench, other));
+            if (!ok) return;
+
+            if (base.isEmpty()) return;
+            try {
+                if (!ench.isAcceptableItem(base)) return;
+            } catch (Throwable ignored) {}
+
+            serverSelections.put(ench, clamped);
         });
         rebuildPreview(player);
         this.sendContentUpdates();
@@ -534,6 +551,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
         // Use the table’s actual position via ScreenHandlerContext
         float shelfMult = context.get((world, pos) -> bookshelfMultiplier(world, pos), 1.0f);
+        float progressionMult = ResearchTableMod.getProgressionMultiplier(player.getWorld());
 
         Runnable cue = () -> {
             var world = player.getWorld();
@@ -560,9 +578,11 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 final String enchIdStr = Registries.ENCHANTMENT.getId(ench).toString();
 
                 int beforeTotal  = state.getProgress(player.getUuid(), enchIdStr);
-                int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal);
+                int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .usableLevelFor(beforeTotal, ench.getMaxLevel(), progressionMult);
 
-                int base = Math.max(1, level) * 100 * stack.getCount();
+                int perLevel = Math.max(1, 100 / Math.max(1, ench.getMaxLevel()));
+                int base = Math.max(1, level) * perLevel * stack.getCount();
                 int gained = Math.max(1, Math.round(base * shelfMult)); // apply bookshelf bonus
                 state.addProgress(player.getUuid(), enchIdStr, gained);
 
@@ -578,32 +598,37 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 }
 
                 int afterTotal  = state.getProgress(player.getUuid(), enchIdStr);
-                int rawUsable   = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal);
-                int afterUsable = Math.min(rawUsable, ench.getMaxLevel());
+                int rawUsable   = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .usableLevelFor(afterTotal, progressionMult);
+                int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .usableLevelFor(afterTotal, ench.getMaxLevel(), progressionMult);
 
                 player.sendMessage(Text.literal("Researched ").append(ench.getName(Math.max(1, level))), false);
 
-                int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(Math.min(afterUsable + 1, ench.getMaxLevel()));
-                int capThreshold  = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(ench.getMaxLevel());
-                nextThreshold = Math.min(nextThreshold, capThreshold);
+                Text progressMessage;
+                int maxLevel = ench.getMaxLevel();
+                if (afterUsable >= maxLevel) {
+                    progressMessage = Text.literal("Total: " + afterTotal + " - Max level researched!");
+                } else {
+                    int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
+                            .requiredPointsForLevel(Math.min(afterUsable + 1, maxLevel), maxLevel, progressionMult);
+                    int capThreshold  = com.jamsackman.researchtable.state.ResearchPersistentState
+                            .requiredPointsForLevel(maxLevel, maxLevel, progressionMult);
+                    nextThreshold = Math.min(nextThreshold, capThreshold);
 
-                player.sendMessage(
-                        Text.literal(
-                                "Total: " + afterTotal + " / " + nextThreshold +
-                                        " to unlock Level " + toRoman(Math.min(afterUsable + 1, ench.getMaxLevel()))
-                        ),
-                        false
-                );
+                    progressMessage = Text.literal(
+                            "Total: " + afterTotal + " / " + nextThreshold +
+                                    " to unlock Level " + toRoman(Math.min(afterUsable + 1, maxLevel))
+                    );
+                }
+
+                player.sendMessage(progressMessage, false);
 
                 var world = player.getWorld();
                 if (afterUsable > beforeUsable) {
+                    Text baseName = Text.translatable(ench.getTranslationKey());
                     for (int lvl = beforeUsable + 1; lvl <= afterUsable; lvl++) {
-                        player.sendMessage(
-                                Text.literal(ench.getName(1).getString() + " Level " + toRoman(lvl) + " unlocked!"),
-                                false
-                        );
+                        player.sendMessage(createUnlockedMessage(baseName, lvl), false);
                         world.playSound(
                                 null, player.getBlockPos(),
                                 net.minecraft.sound.SoundEvents.ENTITY_PLAYER_LEVELUP,
@@ -662,14 +687,18 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             int gained          = Math.max(1, Math.round(basePoints * shelfMult)); // apply bookshelf bonus
 
             int beforeTotal  = state.getProgress(player.getUuid(), targetEnchId);
-            int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal);
+            int beforeUsable = (target != null)
+                    ? com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal, target.getMaxLevel(), progressionMult)
+                    : com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal, progressionMult);
 
             state.addProgress(player.getUuid(), targetEnchId, gained);
             totalGained += gained;
 
             // feedback & unlock toasts per-enchant
             int afterTotal  = state.getProgress(player.getUuid(), targetEnchId);
-            int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal);
+            int afterUsable = (target != null)
+                    ? com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal, target.getMaxLevel(), progressionMult)
+                    : com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal, progressionMult);
 
             Enchantment target = null;
             Identifier tid = Identifier.tryParse(targetEnchId);
@@ -680,23 +709,30 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             String niceName = (target != null) ? target.getName(1).getString() : targetEnchId;
             player.sendMessage(Text.literal("Researched " + niceName + " +" + gained), false);
 
-            int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                    .pointsForLevel(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1));
-            if (target != null) {
-                int cap = com.jamsackman.researchtable.state.ResearchPersistentState.pointsForLevel(target.getMaxLevel());
-                nextThreshold = Math.min(nextThreshold, cap);
+            Text progressMessage;
+            if (target != null && afterUsable >= target.getMaxLevel()) {
+                progressMessage = Text.literal("Total: " + afterTotal + " - Max level researched!");
+            } else {
+                int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .requiredPointsForLevel(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1), (target != null) ? target.getMaxLevel() : afterUsable + 1, progressionMult);
+                if (target != null) {
+                    int cap = com.jamsackman.researchtable.state.ResearchPersistentState.requiredPointsForLevel(target.getMaxLevel(), target.getMaxLevel(), progressionMult);
+                    nextThreshold = Math.min(nextThreshold, cap);
+                }
+
+                progressMessage = Text.literal("Total: " + afterTotal + " / " + nextThreshold +
+                        " to unlock Level " + toRoman(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1)) );
             }
 
-            player.sendMessage(
-                    Text.literal("Total: " + afterTotal + " / " + nextThreshold +
-                            " to unlock Level " + toRoman(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1)) ),
-                    false
-            );
+            player.sendMessage(progressMessage, false);
 
             var world = player.getWorld();
             if (afterUsable > beforeUsable) {
+                Text baseName = (target != null)
+                        ? Text.translatable(target.getTranslationKey())
+                        : Text.literal(niceName);
                 for (int lvl = beforeUsable + 1; lvl <= afterUsable; lvl++) {
-                    player.sendMessage(Text.literal(niceName + " Level " + toRoman(lvl) + " unlocked!"), false);
+                    player.sendMessage(createUnlockedMessage(baseName, lvl), false);
                     world.playSound(
                             null, player.getBlockPos(),
                             net.minecraft.sound.SoundEvents.ENTITY_PLAYER_LEVELUP,
