@@ -221,14 +221,6 @@ public class ResearchPersistentState extends PersistentState {
         return pointsForLevel(level, 1f);
     }
 
-    /** Variant that accounts for single-level enchantments requiring more points. */
-    public static int pointsForLevel(int level, int maxLevel) {
-        if (maxLevel == 1 && level >= 1) {
-            return SINGLE_LEVEL_UNLOCK_THRESHOLD;
-        }
-        return pointsForLevel(level);
-    }
-
     /** Given total points, return usable level (capped by the enchant's max outside). */
     public static int usableLevelFor(int total, float multiplier) {
         if (total < pointsForLevel(1, multiplier)) return 0;

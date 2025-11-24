@@ -2,7 +2,6 @@ package com.jamsackman.researchtable;
 
 import com.jamsackman.researchtable.block.ModBlocks;
 import com.jamsackman.researchtable.config.ResearchTableConfig;
-import com.jamsackman.researchtable.data.ResearchItems;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.api.ModInitializer;

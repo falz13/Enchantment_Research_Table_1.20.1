@@ -589,9 +589,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         int totalPts = ResearchClientState.progress().getOrDefault(enchId.toString(), 0);
         float progressionMult = ResearchClientState.progressionMultiplier();
-        int usable = ResearchPersistentState.usableLevelFor(totalPts, maxLevel, progressionMult);
         int maxLevel = ench.getMaxLevel();
-        int unlockedLevel = ResearchPersistentState.usableLevelFor(totalPts, maxLevel);
+        int usable = ResearchPersistentState.usableLevelFor(totalPts, maxLevel, progressionMult);
 
         if (unlockedLevel >= maxLevel) {
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.research_complete"),
