@@ -2,7 +2,6 @@ package com.jamsackman.researchtable;
 
 import com.jamsackman.researchtable.block.ModBlocks;
 import com.jamsackman.researchtable.config.ResearchTableConfig;
-import com.jamsackman.researchtable.data.ResearchItems;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.api.ModInitializer;
@@ -46,6 +45,7 @@ import net.minecraft.registry.Registries;
 import com.jamsackman.researchtable.enchant.ImbuedEnchantment;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.world.World;
 
 public class ResearchTableMod implements ModInitializer {
     public static final String MODID = "researchtable";
@@ -112,6 +112,17 @@ public class ResearchTableMod implements ModInitializer {
                     "rt_researchLossOnDeath",
                     GameRules.Category.PLAYER,
                     GameRuleFactory.createIntRule(CONFIG.researchLossOnDeath.getPercent(), 0, 100)
+            );
+
+    public static final GameRules.Key<GameRules.IntRule> GR_PROGRESSION =
+            GameRuleRegistry.register(
+                    "rt_progression",
+                    GameRules.Category.PLAYER,
+                    GameRuleFactory.createIntRule(
+                            CONFIG.progression.toRuleValue(),
+                            0,
+                            ResearchTableConfig.ProgressionSetting.values().length - 1
+                    )
             );
 
     @Override
@@ -275,6 +286,15 @@ public class ResearchTableMod implements ModInitializer {
         });
     }
 
+    public static ResearchTableConfig.ProgressionSetting getProgressionSetting(World world) {
+        int raw = world.getGameRules().get(GR_PROGRESSION).get();
+        return ResearchTableConfig.ProgressionSetting.fromRuleValue(raw);
+    }
+
+    public static float getProgressionMultiplier(World world) {
+        return getProgressionSetting(world).getMultiplier();
+    }
+
     private static void syncDescriptionsTo(ServerPlayerEntity player) {
         var map = EnchantDescriptionRegistry.getAll();
         var buf = PacketByteBufs.create();
@@ -310,6 +330,8 @@ public class ResearchTableMod implements ModInitializer {
         Set<String> unlocked = state.getAllUnlockedFor(uuid);
 
         PacketByteBuf buf = PacketByteBufs.create();
+
+        buf.writeFloat(getProgressionMultiplier(player.getWorld()));
 
         buf.writeVarInt(progress.size());
         progress.forEach((id, total) -> {

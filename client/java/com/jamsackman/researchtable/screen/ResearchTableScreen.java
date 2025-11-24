@@ -380,6 +380,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         record Row(String id, Enchantment ench, String title, String subtitle, int color) {}
         Map<String, Integer> prog = ResearchClientState.progress();
         var unlocked = ResearchClientState.unlocked();
+        float progressionMult = ResearchClientState.progressionMultiplier();
 
         List<Row> rows = new ArrayList<>();
         for (Enchantment ench : Registries.ENCHANTMENT) {
@@ -393,7 +394,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (!isUnlocked) {
                 rows.add(new Row(idStr, ench, "???", null, COLOR_LOCKED));
             } else {
-                int capped = ResearchPersistentState.usableLevelFor(total, ench.getMaxLevel());
+                int usable = ResearchPersistentState.usableLevelFor(total, ench.getMaxLevel(), progressionMult);
+                int capped = Math.min(usable, ench.getMaxLevel());
                 String name = Text.translatable(ench.getTranslationKey()).getString();
                 if (capped == 0) {
                     String subtitle = "Level I Locked";
@@ -586,6 +588,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         drawY += 6;
 
         int totalPts = ResearchClientState.progress().getOrDefault(enchId.toString(), 0);
+        float progressionMult = ResearchClientState.progressionMultiplier();
+        int usable = ResearchPersistentState.usableLevelFor(totalPts, maxLevel, progressionMult);
         int maxLevel = ench.getMaxLevel();
         int unlockedLevel = ResearchPersistentState.usableLevelFor(totalPts, maxLevel);
 
@@ -595,8 +599,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             layoutY += 12;
             drawY += 12;
         } else {
-            int nextLevel = Math.min(unlockedLevel + 1, maxLevel);
-            int nextNeeded = ResearchPersistentState.pointsForLevel(nextLevel, maxLevel);
+            int nextLevel = Math.min(usable + 1, maxLevel);
+            int nextNeeded = ResearchPersistentState.requiredPointsForLevel(nextLevel, maxLevel, progressionMult);
             ctx.drawText(this.textRenderer, Text.translatable("screen.researchtable.researching"),
                     contentLeft, drawY, 0xFFFFFFFF, false);
             layoutY += 12;
@@ -864,12 +868,13 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         var unlockedIds = ResearchClientState.unlocked(); // Set<String>
         var prog = ResearchClientState.progress();        // Map<String, Integer>
+        float progressionMult = ResearchClientState.progressionMultiplier();
 
         Function<Enchantment, Integer> maxUnlockedLevel = (en) -> {
             Identifier id = Registries.ENCHANTMENT.getId(en);
             if (id == null) return 0;
             int total = prog.getOrDefault(id.toString(), 0);
-            return ResearchPersistentState.usableLevelFor(total, en.getMaxLevel());
+            return ResearchPersistentState.usableLevelFor(total, en.getMaxLevel(), progressionMult);
         };
 
         List<Enchantment> applicable = new ArrayList<>();

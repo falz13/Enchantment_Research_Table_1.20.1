@@ -207,11 +207,18 @@ public class ResearchPersistentState extends PersistentState {
     }
 
     /** Return the cumulative points needed to unlock the given 1-based level (I=1). */
-    public static int pointsForLevel(int level) {
+    public static int pointsForLevel(int level, float multiplier) {
         if (level <= 0) return Integer.MAX_VALUE;
-        if (level <= BASE_THRESHOLDS.length) return BASE_THRESHOLDS[level - 1];
-        // beyond the base list, use the tail growth
-        return tailThresholdForLevel(level - 1);
+        float mult = Math.max(0f, multiplier);
+        int base;
+        if (level <= BASE_THRESHOLDS.length) base = BASE_THRESHOLDS[level - 1];
+        else base = tailThresholdForLevel(level - 1);
+        return Math.max(1, Math.round(base * mult));
+    }
+
+    /** Return the cumulative points needed to unlock the given 1-based level (I=1) without scaling. */
+    public static int pointsForLevel(int level) {
+        return pointsForLevel(level, 1f);
     }
 
     /** Variant that accounts for single-level enchantments requiring more points. */
@@ -223,12 +230,12 @@ public class ResearchPersistentState extends PersistentState {
     }
 
     /** Given total points, return usable level (capped by the enchant's max outside). */
-    public static int usableLevelFor(int total) {
-        if (total < BASE_THRESHOLDS[0]) return 0;
+    public static int usableLevelFor(int total, float multiplier) {
+        if (total < pointsForLevel(1, multiplier)) return 0;
         int level = 0;
         while (true) {
             int nextLevel = level + 1;
-            int need = pointsForLevel(nextLevel);
+            int need = pointsForLevel(nextLevel, multiplier);
             if (total >= need) level = nextLevel;
             else break;
             // safety: stop somewhere reasonable
@@ -237,19 +244,35 @@ public class ResearchPersistentState extends PersistentState {
         return level;
     }
 
-    /** Variant that applies the single-level threshold and caps to the provided max. */
-    public static int usableLevelFor(int total, int maxLevel) {
-        int usable = usableLevelFor(total);
-        if (maxLevel == 1 && total < SINGLE_LEVEL_UNLOCK_THRESHOLD) {
-            return 0;
+    public static int usableLevelFor(int total) {
+        return usableLevelFor(total, 1f);
+    }
+
+    /**
+     * Given total points and the enchantment's maximum level, return the usable level respecting single-level
+     * enchantments that require the second threshold to unlock.
+     */
+    public static int usableLevelFor(int total, int maxLevel, float multiplier) {
+        int base = usableLevelFor(total, multiplier);
+        if (maxLevel <= 0) return 0;
+        if (maxLevel == 1) {
+            return total >= pointsForLevel(2, multiplier) ? 1 : 0;
         }
-        return Math.min(usable, maxLevel);
+        return Math.min(base, maxLevel);
+    }
+
+    public static int requiredPointsForLevel(int level, int maxLevel, float multiplier) {
+        int effectiveLevel = level;
+        if (maxLevel == 1 && level >= 1) {
+            effectiveLevel = Math.max(2, level + 1);
+        }
+        return pointsForLevel(effectiveLevel, multiplier);
     }
 
     /** Given current total, return the next threshold strictly above it (or the same if already above cap). */
-    public static int nextThresholdAbove(int total) {
-        int lvl = usableLevelFor(total);
-        int next = pointsForLevel(lvl + 1);
+    public static int nextThresholdAbove(int total, float multiplier) {
+        int lvl = usableLevelFor(total, multiplier);
+        int next = pointsForLevel(lvl + 1, multiplier);
         return next;
     }
 

@@ -574,6 +574,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
         // Use the table’s actual position via ScreenHandlerContext
         float shelfMult = context.get((world, pos) -> bookshelfMultiplier(world, pos), 1.0f);
+        float progressionMult = ResearchTableMod.getProgressionMultiplier(player.getWorld());
 
         Runnable cue = () -> {
             var world = player.getWorld();
@@ -601,7 +602,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
                 int beforeTotal  = state.getProgress(player.getUuid(), enchIdStr);
                 int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .usableLevelFor(beforeTotal, ench.getMaxLevel());
+                        .usableLevelFor(beforeTotal, ench.getMaxLevel(), progressionMult);
 
                 int perLevel = Math.max(1, 100 / Math.max(1, ench.getMaxLevel()));
                 int base = Math.max(1, level) * perLevel * stack.getCount();
@@ -620,8 +621,10 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 }
 
                 int afterTotal  = state.getProgress(player.getUuid(), enchIdStr);
+                int rawUsable   = com.jamsackman.researchtable.state.ResearchPersistentState
+                        .usableLevelFor(afterTotal, progressionMult);
                 int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .usableLevelFor(afterTotal, ench.getMaxLevel());
+                        .usableLevelFor(afterTotal, ench.getMaxLevel(), progressionMult);
 
                 player.sendMessage(Text.literal("Researched ").append(ench.getName(Math.max(1, level))), false);
 
@@ -631,9 +634,9 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                     progressMessage = Text.literal("Total: " + afterTotal + " - Max level researched!");
                 } else {
                     int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                            .pointsForLevel(Math.min(afterUsable + 1, maxLevel));
+                            .requiredPointsForLevel(Math.min(afterUsable + 1, maxLevel), maxLevel, progressionMult);
                     int capThreshold  = com.jamsackman.researchtable.state.ResearchPersistentState
-                            .pointsForLevel(maxLevel);
+                            .requiredPointsForLevel(maxLevel, maxLevel, progressionMult);
                     nextThreshold = Math.min(nextThreshold, capThreshold);
 
                     progressMessage = Text.literal(
@@ -712,16 +715,24 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             int maxLevel = (target != null) ? target.getMaxLevel() : Integer.MAX_VALUE;
 
             int beforeTotal  = state.getProgress(player.getUuid(), targetEnchId);
-            int beforeUsable = com.jamsackman.researchtable.state.ResearchPersistentState
-                    .usableLevelFor(beforeTotal, maxLevel);
+            int beforeUsable = (target != null)
+                    ? com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal, target.getMaxLevel(), progressionMult)
+                    : com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(beforeTotal, progressionMult);
 
             state.addProgress(player.getUuid(), targetEnchId, gained);
             totalGained += gained;
 
             // feedback & unlock toasts per-enchant
             int afterTotal  = state.getProgress(player.getUuid(), targetEnchId);
-            int afterUsable = com.jamsackman.researchtable.state.ResearchPersistentState
-                    .usableLevelFor(afterTotal, maxLevel);
+            int afterUsable = (target != null)
+                    ? com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal, target.getMaxLevel(), progressionMult)
+                    : com.jamsackman.researchtable.state.ResearchPersistentState.usableLevelFor(afterTotal, progressionMult);
+
+            Enchantment target = null;
+            Identifier tid = Identifier.tryParse(targetEnchId);
+            if (tid != null) target = Registries.ENCHANTMENT.get(tid);
+            int maxLevel = (target != null) ? target.getMaxLevel() : Integer.MAX_VALUE;
+            afterUsable = Math.min(afterUsable, maxLevel);
 
             String niceName = (target != null) ? target.getName(1).getString() : targetEnchId;
             player.sendMessage(Text.literal("Researched " + niceName + " +" + gained), false);
@@ -731,9 +742,9 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                 progressMessage = Text.literal("Total: " + afterTotal + " - Max level researched!");
             } else {
                 int nextThreshold = com.jamsackman.researchtable.state.ResearchPersistentState
-                        .pointsForLevel(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1));
+                        .requiredPointsForLevel(Math.min(afterUsable + 1, (target != null) ? target.getMaxLevel() : afterUsable + 1), (target != null) ? target.getMaxLevel() : afterUsable + 1, progressionMult);
                 if (target != null) {
-                    int cap = com.jamsackman.researchtable.state.ResearchPersistentState.pointsForLevel(target.getMaxLevel());
+                    int cap = com.jamsackman.researchtable.state.ResearchPersistentState.requiredPointsForLevel(target.getMaxLevel(), target.getMaxLevel(), progressionMult);
                     nextThreshold = Math.min(nextThreshold, cap);
                 }
 

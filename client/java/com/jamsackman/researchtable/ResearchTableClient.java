@@ -23,7 +23,12 @@ import net.minecraft.util.Formatting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class ResearchTableClient implements ClientModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger("ResearchTableClient");
@@ -86,6 +91,8 @@ public class ResearchTableClient implements ClientModInitializer {
 
         // Receive server → client research sync
         ClientPlayNetworking.registerGlobalReceiver(ResearchTableMod.SYNC_RESEARCH_PACKET, (client, handler, buf, responseSender) -> {
+            float progressionMult = buf.readFloat();
+
             // --- Read progress map ---
             int progCount = buf.readVarInt();
             Map<String, Integer> progress = new LinkedHashMap<>(progCount);
@@ -107,6 +114,8 @@ public class ResearchTableClient implements ClientModInitializer {
                 ResearchClientState.clear();
                 // If method ref upsets your IDE, use a loop instead
                 progress.forEach((id, total) -> ResearchClientState.put(id, total));
+
+                ResearchClientState.setProgressionMultiplier(progressionMult);
 
                 // If your ResearchClientState.setUnlocked signature differs,
                 // these two lines will make it compile either way:
