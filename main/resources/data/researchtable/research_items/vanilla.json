@@ -1,45 +1,469 @@
 {
   "research_items": [
-    { "item": "minecraft:enchanted_golden_apple", "enchantment": "minecraft:mending", "points": 50 },
-    { "item": "minecraft:diamond",                 "enchantment": "minecraft:unbreaking", "points": 25 },
-    { "item": "minecraft:obsidian",                "enchantment": "minecraft:blast_protection", "points": 10 },
-    { "item": "minecraft:magma_cream",             "enchantment": "minecraft:fire_protection", "points": 10 },
-    { "item": "minecraft:shield",                  "enchantment": "minecraft:projectile_protection", "points": 20 },
-    { "item": "minecraft:netherite_scrap",         "enchantment": "minecraft:protection", "points": 50 },
-    { "item": "minecraft:cactus",                  "enchantment": "minecraft:thorns", "points": 5 },
-    { "item": "minecraft:nautilus_shell",          "enchantment": "minecraft:aqua_affinity", "points": 20 },
-    { "item": "minecraft:scute",                   "enchantment": "minecraft:respiration", "points": 25 },
-    { "item": "minecraft:sculk_catalyst",          "enchantment": "minecraft:swift_sneak", "points": 20 },
-    { "item": "minecraft:feather",                 "enchantment": "minecraft:feather_falling", "points": 10 },
-    { "item": "minecraft:sea_pickle",              "enchantment": "minecraft:depth_strider", "points": 10 },
-    { "item": "minecraft:blue_ice",                "enchantment": "minecraft:frost_walker", "points": 2 },
-    { "item": "minecraft:honeycomb",               "enchantment": "minecraft:soul_speed", "points": 20 },
-    { "item": "minecraft:fire_charge",             "enchantment": "minecraft:fire_aspect", "points": 10 },
-    { "item": "minecraft:glistering_melon_slice",  "enchantment": "minecraft:looting", "points": 5 },
-    { "item": "minecraft:ender_pearl",             "enchantment": "minecraft:knockback", "points": 5 },
-    { "item": "minecraft:tnt",                     "enchantment": "minecraft:sweeping_edge", "points": 5 },
-    { "item": "minecraft:spider_eye",              "enchantment": "minecraft:bane_of_arthropods", "points": 20 },
-    { "item": "minecraft:rotten_flesh",            "enchantment": "minecraft:smite", "points": 20 },
-    { "item": "minecraft:flint",                   "enchantment": "minecraft:sharpness", "points": 10 },
-    { "item": "minecraft:trident",                 "enchantment": "minecraft:impaling", "points": 100 },
-    { "item": "minecraft:lightning_rod",           "enchantment": "minecraft:channeling", "points": 5 },
-    { "item": "minecraft:prismarine_shard",        "enchantment": "minecraft:impaling", "points": 20 },
-    { "item": "minecraft:prismarine_crystals",     "enchantment": "minecraft:loyalty", "points": 2 },
-    { "item": "minecraft:ink_sac",                 "enchantment": "minecraft:riptide", "points": 10 },
-    { "item": "minecraft:heavy_core",              "enchantment": "minecraft:breach", "points": 50 },
-    { "item": "minecraft:pointed_dripstone",       "enchantment": "minecraft:density", "points": 2 },
-    { "item": "minecraft:breeze_rod",              "enchantment": "minecraft:wind_burst", "points": 20 },
-    { "item": "minecraft:arrow",                   "enchantment": "minecraft:infinity", "points": 1 },
-    { "item": "minecraft:wind_charge",             "enchantment": "minecraft:punch", "points": 50 },
-    { "item": "minecraft:blaze_rod",               "enchantment": "minecraft:flame", "points": 2 },
-    { "item": "minecraft:string",                  "enchantment": "minecraft:power", "points": 10 },
-    { "item": "minecraft:crossbow",                "enchantment": "minecraft:multishot", "points": 5 },
-    { "item": "minecraft:ominous_banner",          "enchantment": "minecraft:piercing", "points": 50 },
-    { "item": "minecraft:sugar",                   "enchantment": "minecraft:quick_charge", "points": 5 },
-    { "item": "minecraft:iron_ingot",              "enchantment": "minecraft:efficiency", "points": 10 },
-    { "item": "minecraft:amethyst_shard",          "enchantment": "minecraft:fortune", "points": 10 },
-    { "item": "minecraft:quartz",                  "enchantment": "minecraft:silk_touch", "points": 1 },
-    { "item": "minecraft:glow_ink_sac",            "enchantment": "minecraft:luck_of_the_sea", "points": 20 },
-    { "item": "minecraft:cod",                     "enchantment": "minecraft:lure", "points": 5 }
+    {
+      "item": "minecraft:enchanted_golden_apple",
+      "enchantment": "minecraft:mending",
+      "points": 50
+    },
+    {
+      "item": "minecraft:diamond",
+      "enchantment": "minecraft:unbreaking",
+      "points": 25
+    },
+    {
+      "item": "minecraft:obsidian",
+      "enchantment": "minecraft:blast_protection",
+      "points": 25
+    },
+    {
+      "item": "minecraft:magma_cream",
+      "enchantment": "minecraft:fire_protection",
+      "points": 10
+    },
+    {
+      "item": "minecraft:hay_block",
+      "enchantment": "minecraft:projectile_protection",
+      "points": 10
+    },
+    {
+      "item": "minecraft:netherite_scrap",
+      "enchantment": "minecraft:protection",
+      "points": 25
+    },
+    {
+      "item": "minecraft:cactus",
+      "enchantment": "minecraft:thorns",
+      "points": 5
+    },
+    {
+      "item": "minecraft:nautilus_shell",
+      "enchantment": "minecraft:aqua_affinity",
+      "points": 25
+    },
+    {
+      "item": "minecraft:pufferfish",
+      "enchantment": "minecraft:respiration",
+      "points": 25
+    },
+    {
+      "item": "minecraft:sculk_shrieker",
+      "enchantment": "minecraft:swift_sneak",
+      "points": 25
+    },
+    {
+      "item": "minecraft:feather",
+      "enchantment": "minecraft:feather_falling",
+      "points": 5
+    },
+    {
+      "item": "minecraft:sea_pickle",
+      "enchantment": "minecraft:depth_strider",
+      "points": 5
+    },
+    {
+      "item": "minecraft:ice",
+      "enchantment": "minecraft:frost_walker",
+      "points": 2
+    },
+    {
+      "item": "minecraft:honeycomb",
+      "enchantment": "minecraft:soul_speed",
+      "points": 10
+    },
+    {
+      "item": "minecraft:fire_coral_fan",
+      "enchantment": "minecraft:fire_aspect",
+      "points": 10
+    },
+    {
+      "item": "minecraft:glistering_melon_slice",
+      "enchantment": "minecraft:looting",
+      "points": 5
+    },
+    {
+      "item": "minecraft:tnt",
+      "enchantment": "minecraft:knockback",
+      "points": 5
+    },
+    {
+      "item": "minecraft:echo_shard",
+      "enchantment": "minecraft:sweeping_edge",
+      "points": 25
+    },
+    {
+      "item": "minecraft:spider_eye",
+      "enchantment": "minecraft:bane_of_arthropods",
+      "points": 10
+    },
+    {
+      "item": "minecraft:rotten_flesh",
+      "enchantment": "minecraft:smite",
+      "points": 5
+    },
+    {
+      "item": "minecraft:flint",
+      "enchantment": "minecraft:sharpness",
+      "points": 10
+    },
+    {
+      "item": "minecraft:prismarine_shard",
+      "enchantment": "minecraft:impaling",
+      "points": 10
+    },
+    {
+      "item": "minecraft:lightning_rod",
+      "enchantment": "minecraft:channeling",
+      "points": 5
+    },
+    {
+      "item": "minecraft:prismarine_crystals",
+      "enchantment": "minecraft:loyalty",
+      "points": 10
+    },
+    {
+      "item": "minecraft:ink_sac",
+      "enchantment": "minecraft:riptide",
+      "points": 10
+    },
+    {
+      "item": "minecraft:arrow",
+      "enchantment": "minecraft:infinity",
+      "points": 1
+    },
+    {
+      "item": "minecraft:firework_rocket",
+      "enchantment": "minecraft:punch",
+      "points": 1
+    },
+    {
+      "item": "minecraft:blaze_rod",
+      "enchantment": "minecraft:flame",
+      "points": 5
+    },
+    {
+      "item": "minecraft:string",
+      "enchantment": "minecraft:power",
+      "points": 5
+    },
+    {
+      "item": "minecraft:redstone",
+      "enchantment": "minecraft:multishot",
+      "points": 1
+    },
+    {
+      "item": "minecraft:pointed_dripstone",
+      "enchantment": "minecraft:piercing",
+      "points": 10
+    },
+    {
+      "item": "minecraft:sugar",
+      "enchantment": "minecraft:quick_charge",
+      "points": 2
+    },
+    {
+      "item": "minecraft:iron_ingot",
+      "enchantment": "minecraft:efficiency",
+      "points": 10
+    },
+    {
+      "item": "minecraft:amethyst_shard",
+      "enchantment": "minecraft:fortune",
+      "points": 10
+    },
+    {
+      "item": "minecraft:quartz",
+      "enchantment": "minecraft:silk_touch",
+      "points": 1
+    },
+    {
+      "item": "minecraft:glow_ink_sac",
+      "enchantment": "minecraft:luck_of_the_sea",
+      "points": 25
+    },
+    {
+      "item": "minecraft:cod",
+      "enchantment": "minecraft:lure",
+      "points": 5
+    },
+    {
+      "item": "minecraft:nether_star",
+      "enchantment": "researchtableenchantments:safekeep",
+      "points": 100
+    },
+    {
+      "item": "minecraft:bone",
+      "enchantment": "researchtableenchantments:melee_protection",
+      "points": 2
+    },
+    {
+      "item": "minecraft:nether_wart",
+      "enchantment": "researchtableenchantments:potion_master",
+      "points": 2
+    },
+    {
+      "item": "minecraft:glow_berries",
+      "enchantment": "researchtableenchantments:dark_sight",
+      "points": 1
+    },
+    {
+      "item": "minecraft:glowstone_dust",
+      "enchantment": "researchtableenchantments:seeker",
+      "points": 5
+    },
+    {
+      "item": "minecraft:slime_ball",
+      "enchantment": "researchtableenchantments:soft_impact",
+      "points": 5
+    },
+    {
+      "item": "minecraft:dragon_breath",
+      "enchantment": "researchtableenchantments:munitions_expert",
+      "points": 10
+    },
+    {
+      "item": "minecraft:phantom_membrane",
+      "enchantment": "researchtableenchantments:moonwalk",
+      "points": 5
+    },
+    {
+      "item": "minecraft:poisonous_potato",
+      "enchantment": "researchtableenchantments:antidote",
+      "points": 10
+    },
+    {
+      "item": "minecraft:golden_apple",
+      "enchantment": "researchtableenchantments:divine",
+      "points": 10
+    },
+    {
+      "item": "minecraft:heart_of_the_sea",
+      "enchantment": "researchtableenchantments:ocean_heart",
+      "points": 50
+    },
+    {
+      "item": "minecraft:beetroot",
+      "enchantment": "researchtableenchantments:aromatic",
+      "points": 1
+    },
+    {
+      "item": "minecraft:tropical_fish",
+      "enchantment": "researchtableenchantments:hot_pockets",
+      "points": 5
+    },
+    {
+      "item": "minecraft:snowball",
+      "enchantment": "researchtableenchantments:hypothermia",
+      "points": 2
+    },
+    {
+      "item": "minecraft:fire_charge",
+      "enchantment": "researchtableenchantments:salamander",
+      "points": 10
+    },
+    {
+      "item": "minecraft:rabbit_hide",
+      "enchantment": "researchtableenchantments:evasive",
+      "points": 10
+    },
+    {
+      "item": "minecraft:brick",
+      "enchantment": "researchtableenchantments:juggernaut",
+      "points": 1
+    },
+    {
+      "item": "minecraft:netherite_ingot",
+      "enchantment": "researchtableenchantments:last_stand",
+      "points": 25
+    },
+    {
+      "item": "minecraft:ghast_tear",
+      "enchantment": "researchtableenchantments:featherweight",
+      "points": 10
+    },
+    {
+      "item": "minecraft:leather",
+      "enchantment": "researchtableenchantments:longstrider",
+      "points": 2
+    },
+    {
+      "item": "minecraft:goat_horn",
+      "enchantment": "researchtableenchantments:hiker",
+      "points": 2
+    },
+    {
+      "item": "minecraft:black_wool",
+      "enchantment": "researchtableenchantments:lightstep",
+      "points": 2
+    },
+    {
+      "item": "minecraft:blue_ice",
+      "enchantment": "researchtableenchantments:frostbite",
+      "points": 2
+    },
+    {
+      "item": "minecraft:torchflower",
+      "enchantment": "researchtableenchantments:fire_mantle",
+      "points": 25
+    },
+    {
+      "item": "minecraft:nether_brick",
+      "enchantment": "researchtableenchantments:hardened",
+      "points": 1
+    },
+    {
+      "item": "minecraft:rabbit_foot",
+      "enchantment": "researchtableenchantments:hares_blessing",
+      "points": 5
+    },
+    {
+      "item": "minecraft:goat_horn",
+      "enchantment": "researchtableenchantments:harbinger",
+      "points": 50
+    },
+    {
+      "item": "minecraft:wither_rose",
+      "enchantment": "researchtableenchantments:necrotic_aura",
+      "points": 10
+    },
+    {
+      "item": "minecraft:tube_coral_fan",
+      "enchantment": "researchtableenchantments:frost_aspect",
+      "points": 10
+    },
+    {
+      "item": "minecraft:dead_brain_coral_fan",
+      "enchantment": "researchtableenchantments:wither_aspect",
+      "points": 10
+    },
+    {
+      "item": "minecraft:bubble_coral_fan",
+      "enchantment": "researchtableenchantments:venom_aspect",
+      "points": 10
+    },
+    {
+      "item": "minecraft:experience_bottle",
+      "enchantment": "researchtableenchantments:enlightened_hunter",
+      "points": 50
+    },
+    {
+      "item": "minecraft:deepslate_copper_ore",
+      "enchantment": "researchtableenchantments:quick_strike",
+      "points": 10
+    },
+    {
+      "item": "minecraft:deepslate_gold_ore",
+      "enchantment": "researchtableenchantments:critical_strike",
+      "points": 10
+    },
+    {
+      "item": "minecraft:deepslate_redstone_ore",
+      "enchantment": "researchtableenchantments:leeching_strike",
+      "points": 10
+    },
+    {
+      "item": "minecraft:deepslate_iron_ore",
+      "enchantment": "researchtableenchantments:lethal_strike",
+      "points": 10
+    },
+    {
+      "item": "minecraft:spectral_arrow",
+      "enchantment": "researchtableenchantments:reload",
+      "points": 10
+    },
+    {
+      "item": "minecraft:gunpowder",
+      "enchantment": "researchtableenchantments:burst_shot",
+      "points": 5
+    },
+    {
+      "item": "minecraft:end_rod",
+      "enchantment": "researchtableenchantments:extend",
+      "points": 10
+    },
+    {
+      "item": "minecraft:emerald",
+      "enchantment": "researchtableenchantments:enlightened_miner",
+      "points": 10
+    },
+    {
+      "item": "minecraft:magma_block",
+      "enchantment": "researchtableenchantments:furnace_touch",
+      "points": 1
+    },
+    {
+      "item": "minecraft:gravel",
+      "enchantment": "researchtableenchantments:mattock",
+      "points": 1
+    },
+    {
+      "item": "minecraft:sandstone",
+      "enchantment": "researchtableenchantments:kiln_touch",
+      "points": 1
+    },
+    {
+      "item": "minecraft:salmon",
+      "enchantment": "researchtableenchantments:baited",
+      "points": 2
+    },
+    {
+      "item": "minecraft:wheat_seeds",
+      "enchantment": "researchtableenchantments:sow",
+      "points": 1
+    },
+    {
+      "item": "minecraft:bone_meal",
+      "enchantment": "researchtableenchantments:reap",
+      "points": 1
+    },
+    {
+      "item": "minecraft:seagrass",
+      "enchantment": "researchtableenchantments:water_strider",
+      "points": 1
+    },
+    {
+      "item": "minecraft:golden_carrot",
+      "enchantment": "researchtableenchantments:showjumper",
+      "points": 10
+    },
+    {
+      "item": "minecraft:scute",
+      "enchantment": "researchtableenchantments:hardcoat",
+      "points": 25
+    },
+    {
+      "item": "minecraft:mutton",
+      "enchantment": "researchtableenchantments:shepherd",
+      "points": 5
+    },
+    {
+      "item": "minecraft:pink_petals",
+      "enchantment": "researchtableenchantments:botanist",
+      "points": 2
+    },
+    {
+      "item": "minecraft:coal_block",
+      "enchantment": "researchtableenchantments:eternal_flame",
+      "points": 2
+    },
+    {
+      "item": "minecraft:ender_pearl",
+      "enchantment": "researchtableenchantments:voidtide",
+      "points": 10
+    },
+    {
+      "item": "minecraft:chorus_fruit",
+      "enchantment": "researchtableenchantments:heroic_aura",
+      "points": 5
+    },
+    {
+      "item": "minecraft:chorus_flower",
+      "enchantment": "researchtableenchantments:lucky_aura",
+      "points": 10
+    },
+    {
+      "item": "minecraft:popped_chorus_fruit",
+      "enchantment": "researchtableenchantments:industrious_aura",
+      "points": 5
+    }
   ]
 }
