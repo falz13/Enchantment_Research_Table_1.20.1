@@ -361,6 +361,25 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
     }
 
     // ---------- Enchants tab ----------
+    private List<Enchantment> orderedEnchantments() {
+        List<Enchantment> ordered = new ArrayList<>();
+        Enchantment imbued = null;
+
+        for (Enchantment ench : Registries.ENCHANTMENT) {
+            if (ResearchTableMod.isHiddenEnch(ench)) {
+                imbued = ench;
+                continue;
+            }
+            ordered.add(ench);
+        }
+
+        if (imbued != null) {
+            ordered.add(imbued);
+        }
+
+        return ordered;
+    }
+
     private void drawEnchantPane(DrawContext ctx, int guiX, int guiY, int mouseX, int mouseY) {
         int cx = guiX + CONTENT_PAD_LEFT;
         int cy = guiY + CONTENT_PAD_TOP;
@@ -383,7 +402,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         float progressionMult = ResearchClientState.progressionMultiplier();
 
         List<Row> rows = new ArrayList<>();
-        for (Enchantment ench : Registries.ENCHANTMENT) {
+        for (Enchantment ench : orderedEnchantments()) {
             if (ResearchTableMod.isHiddenEnch(ench)) continue;
             Identifier id = Registries.ENCHANTMENT.getId(ench);
             if (id == null) continue;
@@ -1239,7 +1258,8 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (mouseX >= listX && mouseX <= listX + listWb - 8 && mouseY >= listY && mouseY < listY + listHb - 8) {
                 if (hoveredRow >= 0) {
                     List<String> ids = new ArrayList<>();
-                    for (Enchantment ench : Registries.ENCHANTMENT) {
+                    for (Enchantment ench : orderedEnchantments()) {
+                        if (ResearchTableMod.isHiddenEnch(ench)) continue;
                         Identifier id = Registries.ENCHANTMENT.getId(ench);
                         if (id != null) ids.add(id.toString());
                     }
