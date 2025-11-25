@@ -1,9 +1,13 @@
 package com.jamsackman.researchtable.command;
 
 import com.jamsackman.researchtable.ResearchTableMod;
+import com.jamsackman.researchtable.config.ResearchTableConfig;
 import com.jamsackman.researchtable.state.ResearchPersistentState;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.server.command.CommandManager;
@@ -13,8 +17,36 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 import java.util.Collection;
+import java.util.Locale;
 
 public class ResearchCommands {
+
+    private static final SuggestionProvider<ServerCommandSource> PROGRESSION_SUGGESTIONS = (ctx, builder) -> {
+        for (ResearchTableConfig.ProgressionSetting setting : ResearchTableConfig.ProgressionSetting.values()) {
+            builder.suggest(setting.name().toLowerCase(Locale.ROOT));
+        }
+        // friendly aliases that match the requested gamerule wording
+        builder.suggest("very_fast");
+        builder.suggest("fast");
+        builder.suggest("default");
+        builder.suggest("slow");
+        builder.suggest("very_slow");
+        builder.suggest("forever_world");
+        return builder.buildFuture();
+    };
+
+    private static ResearchTableConfig.ProgressionSetting parseProgressionSetting(String raw) {
+        String normalized = raw.trim().toUpperCase(Locale.ROOT);
+        normalized = normalized.replace(' ', '_');
+        // accept both DEFAULT and MEDIUM as synonyms
+        if (normalized.equals("DEFAULT")) normalized = "MEDIUM";
+
+        try {
+            return ResearchTableConfig.ProgressionSetting.valueOf(normalized);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
 
     public static void register(CommandDispatcher<ServerCommandSource> d) {
         d.register(CommandManager.literal("research")
@@ -58,8 +90,6 @@ public class ResearchCommands {
                                                     var server = ctx.getSource().getServer();
                                                     var state = ResearchTableMod.getResearchState(server);
 
-                                                    int pts = ResearchPersistentState.pointsForLevel(level);
-
                                                     boolean all = enchOrAll.getPath().equals("all");
                                                     if (all) {
                                                         // set every enchant to at least this level
@@ -67,13 +97,20 @@ public class ResearchCommands {
                                                         reg.forEach(ench -> {
                                                             var id = reg.getId(ench);
                                                             if (id == null) return;
+                                                            int needed = ResearchPersistentState.requiredPointsForLevel(level, ench.getMaxLevel(),
+                                                                    ResearchTableMod.getProgressionMultiplier(ctx.getSource().getWorld()));
                                                             for (ServerPlayerEntity p : targets) {
-                                                                state.setProgressToAtLeast(p.getUuid(), id.toString(), pts);
+                                                                state.setProgressToAtLeast(p.getUuid(), id.toString(), needed);
                                                             }
                                                         });
                                                     } else {
+                                                        float mult = ResearchTableMod.getProgressionMultiplier(ctx.getSource().getWorld());
+                                                        Enchantment targetEnch = server.getRegistryManager().get(net.minecraft.registry.RegistryKeys.ENCHANTMENT).get(enchOrAll);
+                                                        int needed = ResearchPersistentState.requiredPointsForLevel(level,
+                                                                targetEnch != null ? targetEnch.getMaxLevel() : level,
+                                                                mult);
                                                         for (ServerPlayerEntity p : targets) {
-                                                            state.setProgressToAtLeast(p.getUuid(), enchOrAll.toString(), pts);
+                                                            state.setProgressToAtLeast(p.getUuid(), enchOrAll.toString(), needed);
                                                         }
                                                     }
 
@@ -104,6 +141,35 @@ public class ResearchCommands {
                                     return 1;
                                 })
                         ))
+        );
+
+        d.register(CommandManager.literal("rt_progression")
+                .requires(src -> src.hasPermissionLevel(2))
+                .then(CommandManager.argument("mode", StringArgumentType.word())
+                        .suggests(PROGRESSION_SUGGESTIONS)
+                        .executes(ctx -> {
+                            String raw = StringArgumentType.getString(ctx, "mode");
+                            ResearchTableConfig.ProgressionSetting setting = parseProgressionSetting(raw);
+                            if (setting == null) {
+                                ctx.getSource().sendError(Text.literal(
+                                        "Unknown progression mode: " + raw + " (use very fast, fast, default, slow, very slow, or forever world)"));
+                                return 0;
+                            }
+
+                            var world = ctx.getSource().getWorld();
+                            world.getGameRules().get(ResearchTableMod.GR_PROGRESSION)
+                                    .set(setting.toRuleValue(), ctx.getSource().getServer());
+
+                            ctx.getSource().getServer().getPlayerManager().getPlayerList()
+                                    .forEach(ResearchTableMod::sendResearchSync);
+
+                            int idx = setting.toRuleValue();
+                            ctx.getSource().sendFeedback(
+                                    () -> Text.literal("Set research progression to " + setting.displayName() + " (" + idx + ")"),
+                                    true
+                            );
+                            return 1;
+                        }))
         );
     }
 }
