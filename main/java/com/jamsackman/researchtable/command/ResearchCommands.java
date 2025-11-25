@@ -25,10 +25,6 @@ public class ResearchCommands {
         for (ResearchTableConfig.ProgressionSetting setting : ResearchTableConfig.ProgressionSetting.values()) {
             builder.suggest(setting.name().toLowerCase(Locale.ROOT));
         }
-        // also allow numeric shortcuts 0-5
-        for (int i = 0; i < ResearchTableConfig.ProgressionSetting.values().length; i++) {
-            builder.suggest(Integer.toString(i));
-        }
         // friendly aliases that match the requested gamerule wording
         builder.suggest("very_fast");
         builder.suggest("fast");
@@ -41,13 +37,6 @@ public class ResearchCommands {
 
     private static ResearchTableConfig.ProgressionSetting parseProgressionSetting(String raw) {
         String normalized = raw.trim().toUpperCase(Locale.ROOT);
-        // try numeric ordinal first
-        try {
-            int idx = Integer.parseInt(normalized);
-            return ResearchTableConfig.ProgressionSetting.fromRuleValue(idx);
-        } catch (NumberFormatException ignored) {
-        }
-
         normalized = normalized.replace(' ', '_');
         // accept both DEFAULT and MEDIUM as synonyms
         if (normalized.equals("DEFAULT")) normalized = "MEDIUM";
@@ -163,8 +152,7 @@ public class ResearchCommands {
                             ResearchTableConfig.ProgressionSetting setting = parseProgressionSetting(raw);
                             if (setting == null) {
                                 ctx.getSource().sendError(Text.literal(
-                                        "Unknown progression mode: " + raw + " (use very fast (0), fast (1), default (2), " +
-                                                "slow (3), very slow (4), or forever world (5))"));
+                                        "Unknown progression mode: " + raw + " (use very fast, fast, default, slow, very slow, or forever world)"));
                                 return 0;
                             }
 
