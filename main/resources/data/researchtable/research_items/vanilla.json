@@ -87,7 +87,7 @@
     },
     {
       "item": "minecraft:echo_shard",
-      "enchantment": "minecraft:sweeping_edge",
+      "enchantment": "minecraft:sweeping",
       "points": 25
     },
     {
@@ -396,7 +396,7 @@
       "points": 1
     },
     {
-      "item": "minecraft:sandstone",
+      "item": "minecraft:coal",
       "enchantment": "researchtableenchantments:kiln_touch",
       "points": 1
     },
