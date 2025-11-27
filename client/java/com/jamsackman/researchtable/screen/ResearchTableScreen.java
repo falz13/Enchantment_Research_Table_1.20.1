@@ -342,7 +342,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             drawResearchPreview(ctx, x, y, mouseX, mouseY);
         } else if (tab == 2) {
             ItemStack item = handler.getSlot(ResearchTableScreenHandler.INPUT_SLOT).getStack();
-            boolean showSide = !item.isEmpty() && (item.isEnchantable() || !EnchantmentHelper.get(item).isEmpty());
+            boolean showSide = !item.isEmpty();
             if (showSide) {
                 int guiX = (this.width - this.backgroundWidth) / 2;
                 int guiY = (this.height - this.backgroundHeight) / 2;
