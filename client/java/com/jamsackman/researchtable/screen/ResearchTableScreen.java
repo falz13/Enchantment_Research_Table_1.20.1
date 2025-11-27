@@ -342,7 +342,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             drawResearchPreview(ctx, x, y, mouseX, mouseY);
         } else if (tab == 2) {
             ItemStack item = handler.getSlot(ResearchTableScreenHandler.INPUT_SLOT).getStack();
-            boolean showSide = !item.isEmpty() && (item.isEnchantable() || !EnchantmentHelper.get(item).isEmpty());
+            boolean showSide = !item.isEmpty();
             if (showSide) {
                 int guiX = (this.width - this.backgroundWidth) / 2;
                 int guiY = (this.height - this.backgroundHeight) / 2;
@@ -511,7 +511,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (panelContentHeight > visibleH) {
                 int barX = panelX + panelW - 5;
                 int barY = contentTop;
-                int barH = visibleH;
+                int barH = Math.max(0, visibleH - 3);
                 int thumbH = Math.max(6, (int) (barH * (visibleH / (float) panelContentHeight)));
                 int thumbY = barY + (int) ((barH - thumbH) * (panelScroll / (float) (panelContentHeight - visibleH)));
                 ctx.drawText(this.textRenderer, Text.literal("||"), barX, thumbY, 0x606060, false);
@@ -556,7 +556,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (panelContentHeight > visibleH) {
                 int barX = panelX + panelW - 5;
                 int barY = contentTop;
-                int barH = visibleH;
+                int barH = Math.max(0, visibleH - 3);
                 int thumbH = Math.max(6, (int) (barH * (visibleH / (float) panelContentHeight)));
                 int thumbY = barY + (int) ((barH - thumbH) * (panelScroll / (float) (panelContentHeight - visibleH)));
                 ctx.drawText(this.textRenderer, Text.literal("||"), barX, thumbY, 0x606060, false);
@@ -685,7 +685,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         if (panelContentHeight > visibleH) {
             int barX = panelX + (contentRight - contentLeft) + padX;
             int barY = contentTop;
-            int barH = visibleH;
+            int barH = Math.max(0, visibleH - 3);
             int thumbH = Math.max(6, (int) (barH * (visibleH / (float) panelContentHeight)));
             int thumbY = barY + (int) ((barH - thumbH) * (panelScroll / (float) (panelContentHeight - visibleH)));
             ctx.drawText(this.textRenderer, Text.literal("||"), barX, thumbY, 0x606060, false);
