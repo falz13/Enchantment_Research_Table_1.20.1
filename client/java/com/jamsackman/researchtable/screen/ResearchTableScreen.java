@@ -342,7 +342,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             drawResearchPreview(ctx, x, y, mouseX, mouseY);
         } else if (tab == 2) {
             ItemStack item = handler.getSlot(ResearchTableScreenHandler.INPUT_SLOT).getStack();
-            boolean showSide = !item.isEmpty() && (item.isEnchantable() || !EnchantmentHelper.get(item).isEmpty());
+            boolean showSide = !item.isEmpty();
             if (showSide) {
                 int guiX = (this.width - this.backgroundWidth) / 2;
                 int guiY = (this.height - this.backgroundHeight) / 2;
@@ -511,7 +511,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (panelContentHeight > visibleH) {
                 int barX = panelX + panelW - 5;
                 int barY = contentTop;
-                int barH = visibleH;
+                int barH = Math.max(0, visibleH - 3);
                 int thumbH = Math.max(6, (int) (barH * (visibleH / (float) panelContentHeight)));
                 int thumbY = barY + (int) ((barH - thumbH) * (panelScroll / (float) (panelContentHeight - visibleH)));
                 ctx.drawText(this.textRenderer, Text.literal("||"), barX, thumbY, 0x606060, false);
@@ -556,7 +556,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (panelContentHeight > visibleH) {
                 int barX = panelX + panelW - 5;
                 int barY = contentTop;
-                int barH = visibleH;
+                int barH = Math.max(0, visibleH - 3);
                 int thumbH = Math.max(6, (int) (barH * (visibleH / (float) panelContentHeight)));
                 int thumbY = barY + (int) ((barH - thumbH) * (panelScroll / (float) (panelContentHeight - visibleH)));
                 ctx.drawText(this.textRenderer, Text.literal("||"), barX, thumbY, 0x606060, false);
@@ -685,7 +685,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         if (panelContentHeight > visibleH) {
             int barX = panelX + (contentRight - contentLeft) + padX;
             int barY = contentTop;
-            int barH = visibleH;
+            int barH = Math.max(0, visibleH - 3);
             int thumbH = Math.max(6, (int) (barH * (visibleH / (float) panelContentHeight)));
             int thumbY = barY + (int) ((barH - thumbH) * (panelScroll / (float) (panelContentHeight - visibleH)));
             ctx.drawText(this.textRenderer, Text.literal("||"), barX, thumbY, 0x606060, false);
@@ -877,6 +877,15 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         }
     }
 
+    private static boolean isApplicableToItem(Enchantment enchantment, ItemStack stack) {
+        if (enchantment == null || stack == null || stack.isEmpty()) return false;
+        try {
+            return enchantment.isAcceptableItem(stack);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     private void buildImbueRows(ItemStack stack) {
         imbueRows.clear();
 
@@ -895,9 +904,12 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             return ResearchPersistentState.usableLevelFor(total, en.getMaxLevel(), progressionMult);
         };
 
+        // Only show enchantments that accept the current item
         List<Enchantment> applicable = new ArrayList<>();
         for (Enchantment en : Registries.ENCHANTMENT) {
-            try { if (en.isAcceptableItem(stack)) applicable.add(en); } catch (Throwable ignored) {}
+            if (isApplicableToItem(en, stack)) {
+                applicable.add(en);
+            }
         }
 
         int y = 0;
@@ -918,6 +930,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         List<Enchantment> unlockedList = new ArrayList<>();
         for (Enchantment en : applicable) {
+            if (ResearchTableMod.isHiddenEnch(en)) continue;
             if (current.containsKey(en)) continue;
             Identifier id = Registries.ENCHANTMENT.getId(en);
             if (id == null) continue;
@@ -1049,7 +1062,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
     }
 
     private boolean isSelectionAllowed(Enchantment ench, ItemStack stack) {
-        if (ench == null) return false;
+        if (ench == null || !isApplicableToItem(ench, stack)) return false;
 
         Map<Enchantment, Integer> current = EnchantmentHelper.get(stack);
         current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
@@ -1062,11 +1075,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (other != ench && !areCompatible(ench, other)) return false;
         }
 
-        try {
-            return ench.isAcceptableItem(stack);
-        } catch (Throwable t) {
-            return true;
-        }
+        return true;
     }
 
     private void computeCosts() {
