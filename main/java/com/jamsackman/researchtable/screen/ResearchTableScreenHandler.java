@@ -237,10 +237,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                     if (!areCompatible(keys.get(i), keys.get(j))) allCompat = false;
                 }
             }
-            boolean acceptableForItem = keys.stream().allMatch(en -> {
-                try { return en.isAcceptableItem(out); } catch (Throwable t) { return true; }
-            });
-            if (!allCompat || !acceptableForItem) {
+            if (!allCompat) {
                 // if it fails, do NOT offer a preview or a cost — player must resolve selection
                 previewInv.setStack(0, ItemStack.EMPTY);
                 serverLevelCost = 0;
@@ -356,11 +353,6 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 // Acceptable for the item type
         ItemStack check = base.copy();
         EnchantmentHelper.set(result, check);
-        boolean acceptable = ks.stream().allMatch(en -> {
-            try { return en.isAcceptableItem(check); } catch (Throwable t) { return true; }
-        });
-        if (!acceptable) return;
-
         // ---- Spend lapis (write back into the real inventory backing the slot)
         Slot lapisSlot = this.getSlot(LAPIS_SLOT);
         Inventory lapisInv = lapisSlot.inventory;
@@ -434,10 +426,6 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             if (!ok) return;
 
             if (base.isEmpty()) return;
-            try {
-                if (!ench.isAcceptableItem(base)) return;
-            } catch (Throwable ignored) {}
-
             serverSelections.put(ench, clamped);
         });
         rebuildPreview(player);
