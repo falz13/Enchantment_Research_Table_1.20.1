@@ -205,6 +205,15 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         }
     }
 
+    private static boolean isApplicableToItem(Enchantment enchantment, ItemStack stack) {
+        if (enchantment == null || stack == null || stack.isEmpty()) return false;
+        try {
+            return enchantment.isAcceptableItem(stack);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     // -------------------- Preview / cost calc for Imbue tab --------------------
 
     private void rebuildPreview(ServerPlayerEntity player) {
@@ -227,7 +236,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
         Map<Enchantment,Integer> result = new HashMap<>(current);
         serverSelections.forEach((e, lvl) -> {
-            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(e, cur));
+            boolean ok = isApplicableToItem(e, input);
+            ok = ok && current.keySet().stream().allMatch(cur -> areCompatible(e, cur));
             ok = ok && serverSelections.keySet().stream().filter(other -> other != e).allMatch(other -> areCompatible(e, other));
             if (ok) result.put(e, Math.min(lvl, e.getMaxLevel()));
             boolean allCompat = true;
@@ -334,7 +344,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             Enchantment ench = e.getKey();
             int target = Math.min(e.getValue(), ench.getMaxLevel());
 
-            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
+            boolean ok = isApplicableToItem(ench, base);
+            ok = ok && current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
             ok = ok && serverSelections.keySet().stream().filter(other -> other != ench)
                     .allMatch(other -> areCompatible(ench, other));
 
@@ -417,7 +428,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             int clamped = Math.min(Math.max(1, lvl), ench.getMaxLevel());
             if (clamped <= 0) return;
 
-            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
+            boolean ok = isApplicableToItem(ench, base);
+            ok = ok && current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
             if (!ok) return;
 
             ok = serverSelections.keySet().stream()

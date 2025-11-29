@@ -877,6 +877,15 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
         }
     }
 
+    private static boolean isApplicableToItem(Enchantment enchantment, ItemStack stack) {
+        if (enchantment == null || stack == null || stack.isEmpty()) return false;
+        try {
+            return enchantment.isAcceptableItem(stack);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     private void buildImbueRows(ItemStack stack) {
         imbueRows.clear();
 
@@ -895,10 +904,12 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             return ResearchPersistentState.usableLevelFor(total, en.getMaxLevel(), progressionMult);
         };
 
-        // Allow any enchantment to be applied; compatibility will be enforced later
+        // Only show enchantments that accept the current item
         List<Enchantment> applicable = new ArrayList<>();
         for (Enchantment en : Registries.ENCHANTMENT) {
-            applicable.add(en);
+            if (isApplicableToItem(en, stack)) {
+                applicable.add(en);
+            }
         }
 
         int y = 0;
@@ -1051,7 +1062,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
     }
 
     private boolean isSelectionAllowed(Enchantment ench, ItemStack stack) {
-        if (ench == null) return false;
+        if (ench == null || !isApplicableToItem(ench, stack)) return false;
 
         Map<Enchantment, Integer> current = EnchantmentHelper.get(stack);
         current.entrySet().removeIf(e -> ResearchTableMod.isHiddenEnch(e.getKey()));
