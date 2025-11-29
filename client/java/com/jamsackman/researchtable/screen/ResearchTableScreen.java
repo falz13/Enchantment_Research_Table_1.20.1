@@ -895,9 +895,10 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             return ResearchPersistentState.usableLevelFor(total, en.getMaxLevel(), progressionMult);
         };
 
+        // Allow any enchantment to be applied; compatibility will be enforced later
         List<Enchantment> applicable = new ArrayList<>();
         for (Enchantment en : Registries.ENCHANTMENT) {
-            try { if (en.isAcceptableItem(stack)) applicable.add(en); } catch (Throwable ignored) {}
+            applicable.add(en);
         }
 
         int y = 0;
@@ -918,6 +919,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
 
         List<Enchantment> unlockedList = new ArrayList<>();
         for (Enchantment en : applicable) {
+            if (ResearchTableMod.isHiddenEnch(en)) continue;
             if (current.containsKey(en)) continue;
             Identifier id = Registries.ENCHANTMENT.getId(en);
             if (id == null) continue;
@@ -1062,11 +1064,7 @@ public class ResearchTableScreen extends HandledScreen<ResearchTableScreenHandle
             if (other != ench && !areCompatible(ench, other)) return false;
         }
 
-        try {
-            return ench.isAcceptableItem(stack);
-        } catch (Throwable t) {
-            return true;
-        }
+        return true;
     }
 
     private void computeCosts() {
