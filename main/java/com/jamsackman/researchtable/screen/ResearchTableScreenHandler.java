@@ -205,6 +205,15 @@ public class ResearchTableScreenHandler extends ScreenHandler {
         }
     }
 
+    private static boolean isApplicableToItem(Enchantment enchantment, ItemStack stack) {
+        if (enchantment == null || stack == null || stack.isEmpty()) return false;
+        try {
+            return enchantment.isAcceptableItem(stack);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     // -------------------- Preview / cost calc for Imbue tab --------------------
 
     private void rebuildPreview(ServerPlayerEntity player) {
@@ -227,7 +236,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 
         Map<Enchantment,Integer> result = new HashMap<>(current);
         serverSelections.forEach((e, lvl) -> {
-            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(e, cur));
+            boolean ok = isApplicableToItem(e, input);
+            ok = ok && current.keySet().stream().allMatch(cur -> areCompatible(e, cur));
             ok = ok && serverSelections.keySet().stream().filter(other -> other != e).allMatch(other -> areCompatible(e, other));
             if (ok) result.put(e, Math.min(lvl, e.getMaxLevel()));
             boolean allCompat = true;
@@ -237,10 +247,7 @@ public class ResearchTableScreenHandler extends ScreenHandler {
                     if (!areCompatible(keys.get(i), keys.get(j))) allCompat = false;
                 }
             }
-            boolean acceptableForItem = keys.stream().allMatch(en -> {
-                try { return en.isAcceptableItem(out); } catch (Throwable t) { return true; }
-            });
-            if (!allCompat || !acceptableForItem) {
+            if (!allCompat) {
                 // if it fails, do NOT offer a preview or a cost — player must resolve selection
                 previewInv.setStack(0, ItemStack.EMPTY);
                 serverLevelCost = 0;
@@ -337,7 +344,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             Enchantment ench = e.getKey();
             int target = Math.min(e.getValue(), ench.getMaxLevel());
 
-            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
+            boolean ok = isApplicableToItem(ench, base);
+            ok = ok && current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
             ok = ok && serverSelections.keySet().stream().filter(other -> other != ench)
                     .allMatch(other -> areCompatible(ench, other));
 
@@ -356,11 +364,6 @@ public class ResearchTableScreenHandler extends ScreenHandler {
 // Acceptable for the item type
         ItemStack check = base.copy();
         EnchantmentHelper.set(result, check);
-        boolean acceptable = ks.stream().allMatch(en -> {
-            try { return en.isAcceptableItem(check); } catch (Throwable t) { return true; }
-        });
-        if (!acceptable) return;
-
         // ---- Spend lapis (write back into the real inventory backing the slot)
         Slot lapisSlot = this.getSlot(LAPIS_SLOT);
         Inventory lapisInv = lapisSlot.inventory;
@@ -425,7 +428,8 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             int clamped = Math.min(Math.max(1, lvl), ench.getMaxLevel());
             if (clamped <= 0) return;
 
-            boolean ok = current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
+            boolean ok = isApplicableToItem(ench, base);
+            ok = ok && current.keySet().stream().allMatch(cur -> areCompatible(ench, cur));
             if (!ok) return;
 
             ok = serverSelections.keySet().stream()
@@ -434,10 +438,6 @@ public class ResearchTableScreenHandler extends ScreenHandler {
             if (!ok) return;
 
             if (base.isEmpty()) return;
-            try {
-                if (!ench.isAcceptableItem(base)) return;
-            } catch (Throwable ignored) {}
-
             serverSelections.put(ench, clamped);
         });
         rebuildPreview(player);
